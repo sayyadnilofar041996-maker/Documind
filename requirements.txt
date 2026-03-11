@@ -1,0 +1,48 @@
+# === Web Framework ===
+# fastapi
+# uvicorn[standard]
+# python-multipart
+
+# === Validation & Settings ===
+# pydantic
+# pydantic-settings
+
+# === Database ===
+# sqlalchemy
+# asyncpg
+# alembic
+# pgvector
+
+# === Cache & Queue ===
+# redis
+# celery
+# flower
+
+# === Auth ===
+# python-jose[cryptography]
+# passlib[bcrypt]
+
+# === LLM & AI ===
+# groq
+# sentence-transformers
+# langchain
+# langchain-community
+
+# === Document Parsing ===
+# pymupdf
+# python-docx
+
+# === Reliability ===
+# tenacity
+
+# === Observability ===
+# structlog
+# prometheus-client
+
+# === HTTP ===
+# httpx
+
+# === Testing ===
+# pytest
+# pytest-asyncio
+# TODO: add exact versions in Phase 1

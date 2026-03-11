@@ -1,0 +1,8 @@
+# services:
+#   postgres:   # pgvector/pgvector:pg16
+#   redis:      # redis:7-alpine
+#   api:        # FastAPI on :8000
+#   worker:     # Celery worker
+#   beat:       # Celery beat scheduler
+#   flower:     # Celery monitor on :5555
+#   mcp:        # MCP agent server on :8001
