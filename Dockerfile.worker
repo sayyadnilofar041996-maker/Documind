@@ -1,0 +1,6 @@
+# DocuMind Celery Worker
+# Base: python:3.12-slim
+# Built in Phase 6
+# TODO: add real Dockerfile.worker content in Phase 6
+FROM scratch
+# placeholder — replace in Phase 6
