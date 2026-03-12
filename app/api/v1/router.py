@@ -39,16 +39,12 @@ except ImportError:
     pass  # auth router not implemented yet — skip silently
 
 # ── Documents (available at /api/v1/documents/...) ────────────
-# Placeholder — full implementation in T-2.1
-try:
-    from app.api.v1.documents import router as documents_router
-    api_router.include_router(
-        documents_router,
-        prefix="/documents",
-        tags=["Documents"],
-    )
-except ImportError:
-    pass  # documents router not implemented yet — skip silently
+from app.api.v1.documents import router as documents_router
+api_router.include_router(
+    documents_router,
+    prefix="/documents",
+    tags=["Documents"],
+)
 
 # ── Query (available at /api/v1/query/...) ────────────────────
 # Placeholder — full implementation in T-4.3

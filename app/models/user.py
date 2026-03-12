@@ -1,14 +1,71 @@
 """
 DocuMind - models/user.py
 Purpose : SQLAlchemy User ORM model (table: users)
-Phase   : 1
+Phase   : 1 — Foundation
 """
-# ============================================================
-# PLACEHOLDER — implementation added in Phase 1
-# ============================================================
-# Columns: id (UUID PK), email, username, hashed_password,
-#          is_active (bool), created_at (timestamptz)
-# Relations: documents, sessions, refresh_tokens
-# ============================================================
 
-pass
+import uuid
+from datetime import datetime, timezone
+from typing import List, TYPE_CHECKING
+from sqlalchemy import String, Boolean, DateTime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.document import Document
+    from app.models.session import Session
+    from app.models.token import RefreshToken
+
+
+class User(Base):
+    """
+    User model for authentication and ownership.
+    """
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, 
+        default=uuid.uuid4
+    )
+    email: Mapped[str] = mapped_column(
+        String(255), 
+        unique=True, 
+        index=True, 
+        nullable=False
+    )
+    username: Mapped[str] = mapped_column(
+        String(50), 
+        unique=True, 
+        index=True, 
+        nullable=False
+    )
+    hashed_password: Mapped[str] = mapped_column(
+        String(255), 
+        nullable=False
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, 
+        default=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), 
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+    # ── Relationships ──────────────────────────────────────────
+    documents: Mapped[List["Document"]] = relationship(
+        back_populates="owner", 
+        cascade="all, delete-orphan"
+    )
+    sessions: Mapped[List["Session"]] = relationship(
+        back_populates="user", 
+        cascade="all, delete-orphan"
+    )
+    refresh_tokens: Mapped[List["RefreshToken"]] = relationship(
+        back_populates="user", 
+        cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        return f"<User {self.email}>"
