@@ -3,12 +3,13 @@ DocuMind - core/security.py
 Purpose : JWT creation/decoding, password hashing, refresh token utils
 Phase   : 1 — Foundation
 """
-
 import hashlib
-import uuid
+import secrets
 from datetime import datetime, timedelta, timezone
-from jose import jwt, JWTError
+
+from jose import JWTError, jwt
 from passlib.context import CryptContext
+
 from app.config import get_settings
 
 settings = get_settings()
@@ -41,12 +42,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(user_id: str) -> str:
     """
     Create a JWT access token for a user.
-    
+
     Payload:
       sub  → user ID as string (subject)
-      exp  → expiry timestamp (15 minutes from now)
+      exp  → expiry timestamp (configurable, default 15 min)
+      iat  → issued-at timestamp
       type → 'access' (prevents refresh tokens being used as access)
-    
+
     Signed with SECRET_KEY using HS256 algorithm.
     """
     expire = datetime.now(timezone.utc) + timedelta(
@@ -55,6 +57,7 @@ def create_access_token(user_id: str) -> str:
     payload = {
         "sub": str(user_id),   # MUST be string
         "exp": expire,
+        "iat": datetime.now(timezone.utc),
         "type": "access",
     }
     return jwt.encode(
@@ -64,43 +67,16 @@ def create_access_token(user_id: str) -> str:
     )
 
 
-# ── Refresh Token ─────────────────────────────────────────────
-def create_refresh_token() -> tuple[str, str]:
-    """
-    Create a refresh token pair.
-    
-    Returns: (raw_token, sha256_hash)
-    
-    - raw_token  → sent to the user (store in their browser/app)
-    - sha256_hash → stored in database (NEVER store raw token in DB)
-    
-    Why hash it?
-    If DB is compromised → attacker gets hashes, not real tokens
-    They cannot use a hash to refresh — they need the raw token
-    """
-    raw_token = str(uuid.uuid4())
-    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
-    return raw_token, token_hash
-
-
-def hash_refresh_token(raw_token: str) -> str:
-    """
-    Hash a raw refresh token for DB lookup.
-    Used when user sends refresh token → hash it → find in DB.
-    """
-    return hashlib.sha256(raw_token.encode()).hexdigest()
-
-
 # ── Token Decoding ────────────────────────────────────────────
 def decode_access_token(token: str) -> dict:
     """
     Decode and validate a JWT access token.
-    
+
     Raises JWTError if:
       - Token is invalid or tampered
       - Token has expired
       - Token is not an access token (type != 'access')
-    
+
     Returns payload dict with 'sub' = user_id string
     """
     try:
@@ -109,10 +85,36 @@ def decode_access_token(token: str) -> dict:
             settings.secret_key,
             algorithms=[settings.jwt_algorithm],
         )
-        # Extra check: ensure this is an access token
-        # Prevents refresh tokens from being used as access tokens
+        # Extra check: prevent refresh tokens being used as access tokens
         if payload.get("type") != "access":
             raise JWTError("Invalid token type")
         return payload
     except JWTError:
         raise
+
+
+# ── Refresh Token ─────────────────────────────────────────────
+def create_refresh_token() -> tuple[str, str]:
+    """
+    Create a refresh token pair.
+
+    Returns: (raw_token, sha256_hash)
+
+    - raw_token   → sent to the user (store in their browser/app)
+    - sha256_hash → stored in database (NEVER store raw token in DB)
+
+    Why hash it?
+    If DB is compromised → attacker gets hashes, not real tokens.
+    They cannot use a hash to refresh — they need the raw token.
+    """
+    raw = secrets.token_urlsafe(64)   # 64-byte cryptographically random
+    token_hash = hashlib.sha256(raw.encode()).hexdigest()
+    return raw, token_hash
+
+
+def hash_refresh_token(raw_token: str) -> str:
+    """
+    Hash a raw refresh token for DB lookup.
+    Used when user sends refresh token → hash it → find in DB.
+    """
+    return hashlib.sha256(raw_token.encode()).hexdigest()

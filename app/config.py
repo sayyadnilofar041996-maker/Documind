@@ -1,9 +1,8 @@
 """
 DocuMind - config.py
-Purpose : Pydantic BaseSettings — all environment variable definitions
+Purpose : Pydantic-settings BaseSettings — all environment variable definitions
 Phase   : 1 — Foundation
 """
-
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,29 +12,32 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     # ── Application ───────────────────────────────────────
     app_name: str = "DocuMind"
     app_version: str = "1.0.0"
     debug: bool = False
-    secret_key: str
+    secret_key: str = "change-me-in-production-use-64-char-hex"
 
     # ── PostgreSQL ────────────────────────────────────────
     postgres_host: str = "postgres"
     postgres_port: int = 5432
     postgres_db: str = "documind"
-    postgres_user: str
-    postgres_password: str
-    database_url: str
+    postgres_user: str = "documind_user"
+    postgres_password: str = "password"
+    database_url: str = (
+        "postgresql+asyncpg://documind_user:password@postgres:5432/documind"
+    )
 
     # ── Redis ─────────────────────────────────────────────
-    redis_url: str
-    celery_broker_url: str
-    celery_result_backend: str
+    redis_url: str = "redis://redis:6379/0"
+    celery_broker_url: str = "redis://redis:6379/0"
+    celery_result_backend: str = "redis://redis:6379/1"
 
     # ── Groq API ──────────────────────────────────────────
-    groq_api_key: str
+    groq_api_key: str = ""
     groq_model: str = "llama3-8b-8192"
     groq_max_tokens: int = 1024
     groq_temperature: float = 0.1
@@ -73,7 +75,7 @@ class Settings(BaseSettings):
     celery_task_time_limit: int = 600
 
     # ── MCP Server ────────────────────────────────────────
-    mcp_api_key: str
+    mcp_api_key: str = "change-me"
 
 
 @lru_cache

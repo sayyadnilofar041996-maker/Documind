@@ -1,113 +1,45 @@
 """
 DocuMind - models/document.py
 Purpose : SQLAlchemy Document ORM model + FileType/DocumentStatus enums
-Phase   : 1 — Foundation
+Phase   : 1
 """
-
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Integer, DateTime, ForeignKey, Enum as SQLEnum
+from sqlalchemy.sql import func
 import uuid
 import enum
-from datetime import datetime, timezone
-from typing import List, TYPE_CHECKING
-from sqlalchemy import String, Integer, BigInteger, DateTime, ForeignKey, Enum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.core.database import Base
-
-if TYPE_CHECKING:
-    from app.models.user import User
-    from app.models.chunk import DocumentChunk
-
+from . import Base
 
 class FileType(str, enum.Enum):
-    PDF = "pdf"
-    DOCX = "docx"
-    PYTHON = "py"
-    JAVASCRIPT = "js"
-    TYPESCRIPT = "ts"
-    MARKDOWN = "md"
-
+    pdf = "pdf"
+    docx = "docx"
+    py = "py"
+    js = "js"
+    ts = "ts"
+    md = "md"
 
 class DocumentStatus(str, enum.Enum):
-    PENDING = "pending"
-    PROCESSING = "processing"
-    READY = "ready"
-    FAILED = "failed"
-
+    pending = "pending"
+    processing = "processing"
+    ready = "ready"
+    failed = "failed"
 
 class Document(Base):
-    """
-    Document model for storing document metadata and processing status.
-    """
     __tablename__ = "documents"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, 
-        default=uuid.uuid4
-    )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), 
-        index=True, 
-        nullable=False
-    )
     
-    original_filename: Mapped[str] = mapped_column(
-        String(255), 
-        nullable=False
-    )
-    stored_filename: Mapped[str] = mapped_column(
-        String(255), 
-        nullable=False
-    )
-    file_type: Mapped[FileType] = mapped_column(
-        Enum(FileType), 
-        nullable=False
-    )
-    file_size_bytes: Mapped[int] = mapped_column(
-        BigInteger, 
-        nullable=False
-    )
-    file_sha256: Mapped[str] = mapped_column(
-        String(64), 
-        index=True, 
-        nullable=False
-    )
-    
-    status: Mapped[DocumentStatus] = mapped_column(
-        Enum(DocumentStatus), 
-        default=DocumentStatus.PENDING,
-        index=True
-    )
-    chunk_count: Mapped[int] = mapped_column(
-        Integer, 
-        default=0
-    )
-    celery_task_id: Mapped[str | None] = mapped_column(
-        String(255), 
-        nullable=True
-    )
-    error_message: Mapped[str | None] = mapped_column(
-        String(1000), 
-        nullable=True
-    )
-    
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
-        default=lambda: datetime.now(timezone.utc)
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    original_filename: Mapped[str] = mapped_column(String(255))
+    stored_filename: Mapped[str] = mapped_column(String(255))
+    file_type: Mapped[FileType] = mapped_column(SQLEnum(FileType))
+    file_size_bytes: Mapped[int] = mapped_column(Integer)
+    file_sha256: Mapped[str] = mapped_column(String(64))
+    status: Mapped[DocumentStatus] = mapped_column(SQLEnum(DocumentStatus), default=DocumentStatus.pending)
+    chunk_count: Mapped[int] = mapped_column(Integer, default=0)
+    celery_task_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # ── Relationships ──────────────────────────────────────────
-    owner: Mapped["User"] = relationship(
-        back_populates="documents"
-    )
-    chunks: Mapped[List["DocumentChunk"]] = relationship(
-        back_populates="document", 
-        cascade="all, delete-orphan"
-    )
-
-    def __repr__(self) -> str:
-        return f"<Document {self.original_filename} ({self.status})>"
+    user = relationship("User", back_populates="documents")
+    chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
