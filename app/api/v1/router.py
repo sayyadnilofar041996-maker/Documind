@@ -1,33 +1,14 @@
 """
 DocuMind - api/v1/router.py
-Purpose : Main v1 APIRouter — wires auth, documents, query, health
-Phase   : 1 — Foundation
+Purpose : Main v1 APIRouter — wires auth, documents, query, health sub-routers
+Phase   : 1 — Foundation; extended in Phase 2
 """
-
 from fastapi import APIRouter
-
-# ── Import all routers ────────────────────────────────────────
-from app.api.v1.health import router as health_router
-
-# NOTE: auth, documents, query routers are imported here
-# but their implementation is added in later phases:
-# auth     → T-1.4 (teammate, Phase 1)
-# documents → T-2.1 (you, Phase 2)
-# query    → T-4.3 (you, Phase 4)
-# We use placeholder routers for now so app starts without errors
 
 # ── Main API Router ───────────────────────────────────────────
 api_router = APIRouter()
 
-# ── Health (no prefix — available at /health directly) ────────
-api_router.include_router(
-    health_router,
-    prefix="",
-    tags=["Health"],
-)
-
 # ── Auth (available at /api/v1/auth/...) ──────────────────────
-# Placeholder — full implementation in T-1.4
 try:
     from app.api.v1.auth import router as auth_router
     api_router.include_router(
@@ -38,8 +19,18 @@ try:
 except ImportError:
     pass  # auth router not implemented yet — skip silently
 
+# ── Health (available at /api/v1/health) ──────────────────────
+try:
+    from app.api.v1.health import router as health_router
+    api_router.include_router(
+        health_router,
+        prefix="",
+        tags=["Health"],
+    )
+except ImportError:
+    pass  # health router not implemented yet — skip silently
+
 # ── Documents (available at /api/v1/documents/...) ────────────
-# Placeholder — full implementation in T-2.1
 try:
     from app.api.v1.documents import router as documents_router
     api_router.include_router(
@@ -51,7 +42,6 @@ except ImportError:
     pass  # documents router not implemented yet — skip silently
 
 # ── Query (available at /api/v1/query/...) ────────────────────
-# Placeholder — full implementation in T-4.3
 try:
     from app.api.v1.query import router as query_router
     api_router.include_router(
