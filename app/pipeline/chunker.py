@@ -1,16 +1,15 @@
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.pipeline.parsers import ParsedChunk
 
 def chunk_pages(pages: list[ParsedChunk]) -> list[ParsedChunk]:
     """
-    Chunks a list of parsed document pages into smaller segments.
+    Splits larger parsed pages/chunks into smaller pieces suitable for embedding.
     
     Args:
-        pages (list[ParsedChunk]): List of pages from the document parsers.
+        pages (list[ParsedChunk]): The results from the initial parsing stage.
         
     Returns:
-        list[ParsedChunk]: A list of smaller text chunks, each attributing 
-                          the original page number.
+        list[ParsedChunk]: A more granular list of chunks with page number attribution.
     """
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=512,
@@ -18,17 +17,19 @@ def chunk_pages(pages: list[ParsedChunk]) -> list[ParsedChunk]:
         separators=["\n\n", "\n", ". ", " ", ""]
     )
     
-    all_chunks = []
-    global_chunk_index = 0
+    final_chunks = []
+    chunk_index = 0
     
     for page in pages:
-        texts = splitter.split_text(page.text)
-        for text in texts:
-            all_chunks.append(ParsedChunk(
-                text=text.strip(),
+        # Split each page's text into smaller chunks
+        split_texts = splitter.split_text(page.text)
+        
+        for text in split_texts:
+            final_chunks.append(ParsedChunk(
+                text=text,
                 page_number=page.page_number,
-                chunk_index=global_chunk_index
+                chunk_index=chunk_index
             ))
-            global_chunk_index += 1
+            chunk_index += 1
             
-    return all_chunks
+    return final_chunks
