@@ -12,4 +12,4 @@ tests/test_documents.py::test_list_documents PASSED                      [ 50%]
 tests/test_documents.py::test_get_document_status PASSED                 [ 75%]
 tests/test_documents.py::test_delete_document PASSED                     [100%]
 
-============================== 4 passed in 0.51s ==============================
+============================== 4 passed in 1.01s ==============================
