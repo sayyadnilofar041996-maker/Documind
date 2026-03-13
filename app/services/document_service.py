@@ -13,11 +13,14 @@ from typing import List, Tuple
 from fastapi import UploadFile, HTTPException, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from celery.result import AsyncResult
 import structlog
 
 from app.config import get_settings
 from app.models.document import Document, FileType, DocumentStatus
+from app.models.chunk import DocumentChunk
 from app.schemas.document import DocumentCreate, DocumentUpdate
+from worker.celery_app import app as celery_app
 
 settings = get_settings()
 logger = structlog.get_logger()
@@ -248,3 +251,71 @@ class DocumentService:
             doc_id=str(doc_id), 
             user_id=str(user_id)
         )
+
+    async def get_document_chunks(
+        self,
+        db: AsyncSession,
+        doc_id: uuid.UUID,
+        user_id: uuid.UUID,
+        page: int = 1,
+        page_size: int = 20
+    ) -> Tuple[List[DocumentChunk], int]:
+        """
+        Retrieves a paginated list of chunks for a document.
+        Verifies ownership.
+        """
+        # Ensure document exists and user owns it
+        await self.get_document(db, doc_id, user_id)
+        
+        offset = (page - 1) * page_size
+        stmt = select(DocumentChunk).where(
+            DocumentChunk.document_id == doc_id
+        ).order_by(DocumentChunk.chunk_index).offset(offset).limit(page_size)
+        
+        result = await db.execute(stmt)
+        chunks = list(result.scalars().all())
+        
+        count_stmt = select(func.count(DocumentChunk.id)).where(
+            DocumentChunk.document_id == doc_id
+        )
+        count_result = await db.execute(count_stmt)
+        total = count_result.scalar() or 0
+        
+        return chunks, total
+
+    async def get_enhanced_status(
+        self,
+        db: AsyncSession,
+        doc_id: uuid.UUID,
+        user_id: uuid.UUID
+    ) -> dict:
+        """
+        Fetches document status and merges it with live Celery task status.
+        """
+        doc = await self.get_document(db, doc_id, user_id)
+        
+        celery_state = None
+        progress_pct = 0.0
+        
+        if doc.celery_task_id:
+            res = AsyncResult(doc.celery_task_id, app=celery_app)
+            celery_state = res.state
+            
+        # Map progress based on status
+        if doc.status == DocumentStatus.READY:
+            progress_pct = 100.0
+        elif doc.status == DocumentStatus.PROCESSING:
+            # Simple heuristic since we don't have granular step tracking yet
+            progress_pct = 50.0
+        elif doc.status == DocumentStatus.FAILED:
+            progress_pct = 0.0
+            
+        return {
+            "id": doc.id,
+            "status": doc.status,
+            "chunk_count": doc.chunk_count,
+            "celery_state": celery_state,
+            "error_message": doc.error_message,
+            "progress_pct": progress_pct,
+            "updated_at": doc.updated_at
+        }
