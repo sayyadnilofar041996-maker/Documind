@@ -65,15 +65,15 @@ class DocumentService:
                 detail=f"Unsupported file extension: {ext}"
             )
 
-        # 2. Check size (settings.max_upload_size_mb)
+        # 2. Check size (settings.max_file_size_mb)
         # file.size is available in FastAPI 0.96+
         content = await file.read()
         file_size = len(content)
-        max_size = settings.max_upload_size_mb * 1024 * 1024
+        max_size = settings.max_file_size_mb * 1024 * 1024
         if file_size > max_size:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail=f"File too large. Max size is {settings.max_upload_size_mb}MB"
+                detail=f"File too large. Max size is {settings.max_file_size_mb}MB"
             )
         await file.seek(0)  # Reset for later use
 
@@ -141,14 +141,13 @@ class DocumentService:
         os.makedirs("uploads", exist_ok=True)
 
         await file.seek(0)
+        file_size = 0
         async with aiofiles.open(upload_path, "wb") as out_file:
-             while content := await file.read(65536):
-                 await out_file.write(content)
+            while content := await file.read(65536):
+                await out_file.write(content)
+                file_size += len(content)
 
         # 4. Create DB Record
-        await file.seek(0, 2)
-        file_size = await file.tell()
-        
         doc = Document(
             user_id=user_id,
             original_filename=file.filename,
