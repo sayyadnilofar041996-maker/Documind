@@ -52,11 +52,6 @@ async def readiness():
     Kubernetes readiness probe.
     Checks ALL dependencies before returning healthy.
     Returns 503 if any dependency is down.
-    
-    Checks:
-      - PostgreSQL: runs SELECT 1
-      - Redis: runs PING
-      - Embedding model: checks if loaded in memory
     """
     checks = {
         "db": "error",
@@ -65,7 +60,7 @@ async def readiness():
     }
     all_healthy = True
 
-    # ── Check PostgreSQL ──────────────────────────────────
+    # 1. Check PostgreSQL (SELECT 1)
     try:
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
@@ -74,7 +69,7 @@ async def readiness():
         logger.error("health.db_check_failed", error=str(e))
         all_healthy = False
 
-    # ── Check Redis ───────────────────────────────────────
+    # 2. Check Redis (PING)
     try:
         import redis.asyncio as aioredis
         r = aioredis.from_url(settings.redis_url)
@@ -85,19 +80,22 @@ async def readiness():
         logger.error("health.redis_check_failed", error=str(e))
         all_healthy = False
 
-    # ── Check Embedding Model ─────────────────────────────
+    # 3. Check Embedding Model (Check lru_cache status)
     try:
         from app.pipeline.embedder import get_embedder
-        embedder = get_embedder()
-        if embedder is not None:
+        # We check cache_info to see if it has been called successfully at least once
+        # (Lifespan pre-warms it, so this should be > 0)
+        cache_info = get_embedder.cache_info()
+        if cache_info.currsize > 0:
             checks["embedding_model"] = "loaded"
         else:
+            # If not in cache, the model isn't "loaded" yet (pre-warming failed or hasn't run)
             all_healthy = False
     except Exception as e:
         logger.error("health.embedder_check_failed", error=str(e))
         all_healthy = False
 
-    # ── Return Result ─────────────────────────────────────
+    # ── Response ──────────────────────────────────────────
     http_status = (
         status.HTTP_200_OK
         if all_healthy
@@ -106,8 +104,5 @@ async def readiness():
 
     return JSONResponse(
         status_code=http_status,
-        content={
-            "status": "healthy" if all_healthy else "unhealthy",
-            **checks,
-        },
+        content=checks
     )
