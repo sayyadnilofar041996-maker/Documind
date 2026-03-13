@@ -11,18 +11,18 @@ import enum
 from . import Base
 
 class FileType(str, enum.Enum):
-    pdf = "pdf"
-    docx = "docx"
-    py = "py"
-    js = "js"
-    ts = "ts"
-    md = "md"
+    PDF = "pdf"
+    DOCX = "docx"
+    PYTHON = "py"
+    JAVASCRIPT = "js"
+    TYPESCRIPT = "ts"
+    MARKDOWN = "md"
 
 class DocumentStatus(str, enum.Enum):
-    pending = "pending"
-    processing = "processing"
-    ready = "ready"
-    failed = "failed"
+    PENDING = "pending"
+    PROCESSING = "processing"
+    READY = "ready"
+    FAILED = "failed"
 
 class Document(Base):
     __tablename__ = "documents"
@@ -34,7 +34,7 @@ class Document(Base):
     file_type: Mapped[FileType] = mapped_column(SQLEnum(FileType))
     file_size_bytes: Mapped[int] = mapped_column(Integer)
     file_sha256: Mapped[str] = mapped_column(String(64))
-    status: Mapped[DocumentStatus] = mapped_column(SQLEnum(DocumentStatus), default=DocumentStatus.pending)
+    status: Mapped[DocumentStatus] = mapped_column(SQLEnum(DocumentStatus), default=DocumentStatus.PENDING)
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)
     celery_task_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)

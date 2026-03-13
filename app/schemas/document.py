@@ -1,15 +1,54 @@
 """
 DocuMind - schemas/document.py
 Purpose : Pydantic v2 schemas for document upload, status, chunks
-Phase   : 3
+Phase   : 2 — File Upload
 """
-# ============================================================
-# PLACEHOLDER — implementation added in Phase 3
-# ============================================================
-# - DocumentResponse (full document details)
-# - DocumentStatusResponse (lightweight status poll)
-# - ChunkResponse (chunk text + metadata)
-# - DocumentListResponse (paginated list wrapper)
-# ============================================================
 
-pass
+import uuid
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict, Field
+from app.models.document import FileType, DocumentStatus
+
+
+class DocumentBase(BaseModel):
+    """Base fields for documents."""
+    original_filename: str = Field(..., max_length=255)
+    file_type: FileType
+
+
+class DocumentCreate(DocumentBase):
+    """Schema for document creation (internal use)."""
+    stored_filename: str = Field(..., max_length=255)
+    file_size_bytes: int = Field(..., gt=0)
+    file_sha256: str = Field(..., min_length=64, max_length=64)
+
+
+class DocumentUpdate(BaseModel):
+    """Schema for updating document status or metadata."""
+    status: DocumentStatus | None = None
+    chunk_count: int | None = None
+    celery_task_id: str | None = None
+    error_message: str | None = None
+
+
+class DocumentRead(DocumentBase):
+    """Full document response schema."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    file_size_bytes: int
+    status: DocumentStatus
+    chunk_count: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class DocumentStatusRead(BaseModel):
+    """Lightweight document status schema."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    status: DocumentStatus
+    chunk_count: int
+    error_message: str | None = None

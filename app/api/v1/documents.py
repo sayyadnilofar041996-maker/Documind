@@ -1,17 +1,131 @@
 """
 DocuMind - api/v1/documents.py
-Purpose : Document endpoints — upload, list, get, status, chunks, delete
-Phase   : 3
+Purpose : Document endpoints — upload, list, get, status, delete
+Phase   : 2 — File Upload
 """
-# ============================================================
-# PLACEHOLDER — implementation added in Phase 3
-# ============================================================
-# POST   /upload       → validate file, save, dispatch Celery task
-# GET    /             → paginated list with status filter
-# GET    /{id}         → document details (must be owner)
-# GET    /{id}/status  → lightweight status poll
-# GET    /{id}/chunks  → paginated chunks list
-# DELETE /{id}         → delete doc + file + all chunks
-# ============================================================
 
-pass
+import uuid
+from typing import Annotated
+from fastapi import APIRouter, Depends, UploadFile, File, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.dependencies import get_db, get_current_user
+from app.models.user import User
+from app.models.document import DocumentStatus
+from app.services.document_service import DocumentService
+from app.schemas.document import DocumentRead, DocumentStatusRead
+from app.schemas.common import PaginatedResponse, ErrorResponse
+
+router = APIRouter()
+doc_service = DocumentService()
+
+
+# ── POST /upload ──────────────────────────────────────────────
+@router.post(
+    "/upload",
+    response_model=DocumentRead,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        401: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        413: {"model": ErrorResponse},
+        415: {"model": ErrorResponse},
+    }
+)
+async def upload_document(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Upload a document for processing.
+    Validates file type (PDF, DOCX, etc.), size, and deduplicates.
+    Returns 201 Created and document metadata.
+    """
+    return await doc_service.upload_document(db, file, current_user.id)
+
+
+# ── GET / ─────────────────────────────────────────────────────
+@router.get(
+    "/",
+    response_model=PaginatedResponse,
+)
+async def list_documents(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    status: DocumentStatus | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    List all documents owned by the current user.
+    Supports pagination and status filtering.
+    """
+    items, total = await doc_service.list_documents(
+        db, 
+        current_user.id, 
+        page, 
+        page_size, 
+        status
+    )
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size
+    )
+
+
+# ── GET /{id} ─────────────────────────────────────────────────
+@router.get(
+    "/{id}",
+    response_model=DocumentRead,
+    responses={404: {"model": ErrorResponse}}
+)
+async def get_document(
+    id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get detailed metadata for a specific document.
+    Must be the owner.
+    """
+    return await doc_service.get_document(db, id, current_user.id)
+
+
+# ── GET /{id}/status ──────────────────────────────────────────
+@router.get(
+    "/{id}/status",
+    response_model=DocumentStatusRead,
+    responses={404: {"model": ErrorResponse}}
+)
+async def get_document_status(
+    id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lightweight endpoint for polling document processing status.
+    """
+    doc = await doc_service.get_document(db, id, current_user.id)
+    return doc
+
+
+# ── DELETE /{id} ──────────────────────────────────────────────
+@router.delete(
+    "/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={404: {"model": ErrorResponse}}
+)
+async def delete_document(
+    id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Delete a document and its associated file.
+    Must be the owner.
+    """
+    await doc_service.delete_document(db, id, current_user.id)
+    return None

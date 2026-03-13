@@ -104,14 +104,30 @@ def create_app() -> FastAPI:
 
     # Request ID middleware
     # Adds unique X-Request-ID header to every response for tracing
-    @app.middleware("http")
-    async def request_id_middleware(request: Request, call_next):
-        request_id = str(uuid.uuid4())
-        structlog.contextvars.bind_contextvars(request_id=request_id)
-        response = await call_next(request)
-        response.headers["X-Request-ID"] = request_id
-        structlog.contextvars.clear_contextvars()
-        return response
+    class RequestIDMiddleware:
+        def __init__(self, app):
+            self.app = app
+
+        async def __call__(self, scope, receive, send):
+            if scope["type"] != "http":
+                return await self.app(scope, receive, send)
+
+            request_id = str(uuid.uuid4())
+            structlog.contextvars.bind_contextvars(request_id=request_id)
+
+            async def send_wrapper(message):
+                if message["type"] == "http.response.start":
+                    headers = list(message.get("headers", []))
+                    headers.append((b"X-Request-ID", request_id.encode()))
+                    message["headers"] = headers
+                await send(message)
+
+            try:
+                await self.app(scope, receive, send_wrapper)
+            finally:
+                structlog.contextvars.clear_contextvars()
+
+    app.add_middleware(RequestIDMiddleware)
 
     # ── Exception Handlers (RFC 7807) ──────────────────────
     # All errors return standard Problem Details format:
