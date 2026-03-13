@@ -13,7 +13,7 @@ from app.dependencies import get_db, get_current_user
 from app.models.user import User
 from app.models.document import DocumentStatus
 from app.services.document_service import DocumentService
-from app.schemas.document import DocumentRead, DocumentStatusRead
+from app.schemas.document import DocumentRead, DocumentStatusRead, DocumentStatusFull, ChunkRead
 from app.schemas.common import PaginatedResponse, ErrorResponse
 
 router = APIRouter()
@@ -97,7 +97,7 @@ async def get_document(
 # ── GET /{id}/status ──────────────────────────────────────────
 @router.get(
     "/{id}/status",
-    response_model=DocumentStatusRead,
+    response_model=DocumentStatusFull,
     responses={404: {"model": ErrorResponse}}
 )
 async def get_document_status(
@@ -106,10 +106,42 @@ async def get_document_status(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Lightweight endpoint for polling document processing status.
+    Enhanced endpoint for polling document processing status.
+    Includes Celery state and progress percentage.
     """
-    doc = await doc_service.get_document(db, id, current_user.id)
-    return doc
+    status_info = await doc_service.get_enhanced_status(db, id, current_user.id)
+    return status_info
+
+
+# ── GET /{id}/chunks ──────────────────────────────────────────
+@router.get(
+    "/{id}/chunks",
+    response_model=PaginatedResponse[ChunkRead],
+    responses={
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse}
+    }
+)
+async def get_document_chunks(
+    id: uuid.UUID,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get paginated chunks for a specific document.
+    Must be the owner. Does not return embedding vectors.
+    """
+    items, total = await doc_service.get_document_chunks(
+        db, id, current_user.id, page, page_size
+    )
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size
+    )
 
 
 # ── DELETE /{id} ──────────────────────────────────────────────

@@ -52,3 +52,20 @@ class DocumentStatusRead(BaseModel):
     status: DocumentStatus
     chunk_count: int
     error_message: str | None = None
+
+
+class DocumentStatusFull(DocumentStatusRead):
+    """Enhanced document status with Celery task state."""
+    celery_state: str | None = Field(None, description="Celery task state (e.g., PENDING, SUCCESS, FAILURE)")
+    progress_pct: float = Field(0.0, ge=0.0, le=100.0)
+    updated_at: datetime
+
+
+class ChunkRead(BaseModel):
+    """Schema for document chunks (no embedding)."""
+    model_config = ConfigDict(from_attributes=True)
+
+    text: str
+    page_number: int | None = None
+    chunk_index: int
+    token_count: int
