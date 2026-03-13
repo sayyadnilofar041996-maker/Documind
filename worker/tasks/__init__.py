@@ -1,5 +1,4 @@
-"""
-DocuMind - worker/tasks
-This package contains tasks.
-"""
-# TODO: export symbols here as implementation is added
+from .ingest_task import process_document
+from .embed_task import embed_chunks
+
+__all__ = ["process_document", "embed_chunks"]
