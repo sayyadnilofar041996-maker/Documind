@@ -1,12 +1,15 @@
 """
 DocuMind - schemas/query.py
-Purpose : Pydantic models for RAG query system — requests, responses, sources
-Phase   : 4 — Query System
+Purpose : Pydantic v2 schemas for RAG query system, sessions, and messages
+Phase   : 5 — Session Management
 """
 
 import uuid
+from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 
+
+# ── Existing Query Schemas ────────────────────────────────────
 
 class AskRequest(BaseModel):
     """Schema for a query request."""
@@ -36,3 +39,39 @@ class AskResponse(BaseModel):
     session_id: uuid.UUID
     latency_ms: int
     sources: list[SourceChunk]
+
+
+# ── New Session Schemas ───────────────────────────────────────
+
+class MessageResponse(BaseModel):
+    """Schema for a single message within a session."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    role: str
+    content: str
+    source_chunks: dict | None = None
+    latency_ms: int | None = None
+    created_at: datetime
+
+
+class SessionListResponse(BaseModel):
+    """Schema for a session summary in a list view."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: str
+    document_id: uuid.UUID | None
+    message_count: int
+    created_at: datetime
+
+
+class SessionDetailResponse(BaseModel):
+    """Schema for a detailed session view including full message history."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: str
+    document_id: uuid.UUID | None
+    messages: list[MessageResponse]
+    created_at: datetime
