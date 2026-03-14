@@ -166,8 +166,10 @@ class DocumentService:
         await db.refresh(doc)
         
         logger.info(
-            "document.uploaded", 
-            doc_id=str(doc.id), 
+            "document.uploaded",
+            doc_id=str(doc.id),
+            filename=file.filename,
+            file_size=file_size,
             user_id=str(user_id)
         )
         
@@ -239,8 +241,14 @@ class DocumentService:
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
-        except Exception as e:
-            logger.error("document.delete_file_failed", error=str(e), path=file_path)
+            else:
+                logger.warning("document.file_not_found_on_disk",
+                               doc_id=str(doc_id),
+                               stored_filename=doc.stored_filename)
+        except Exception as exc:
+            logger.error("document.delete_failed",
+                         doc_id=str(doc_id),
+                         error=str(exc))
 
         # 2. Remove from DB
         await db.delete(doc)

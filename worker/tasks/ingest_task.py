@@ -1,5 +1,6 @@
 import os
-import logging
+import structlog
+import uuid
 from worker.celery_app import app, SessionLocal
 from worker.tasks import embed_task
 from app.models.document import Document, DocumentStatus, FileType
@@ -10,7 +11,7 @@ from app.pipeline.parsers.code_parser import parse_code
 from app.pipeline.chunker import chunk_pages
 from app.config import get_settings
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 settings = get_settings()
 
 @app.task(bind=True, max_retries=3, default_retry_delay=60)
@@ -19,12 +20,13 @@ def process_document(self, document_id: str):
     Parses a document, chunks the text, and stores it in the database.
     Then chains to the embedding task.
     """
+    logger.info("ingest.task_started", doc_id=document_id)
     session = SessionLocal()
     try:
         # 1. Fetch document
         document = session.query(Document).filter(Document.id == document_id).first()
         if not document:
-            logger.error(f"Document {document_id} not found")
+            logger.error("ingest.task_failed", doc_id=document_id, error="Document not found")
             return
 
         # 2. Set status to processing
@@ -48,9 +50,18 @@ def process_document(self, document_id: str):
         else:
             raise ValueError(f"Unsupported file type: {document.file_type}")
 
+        logger.info("ingest.parsed",
+                    doc_id=document_id,
+                    pages=len(parsed_results),
+                    file_type=document.file_type.value)
+
         # 4. Chunk pages
         # Pass parsed results (list of ParsedChunk from parsers) to chunker for further splitting if needed
         final_chunks = chunk_pages(parsed_results)
+        
+        logger.info("ingest.chunked",
+                    doc_id=document_id,
+                    chunks=len(final_chunks))
 
         # 5. Bulk insert DocumentChunk records
         # embedding=None at this stage
@@ -68,24 +79,31 @@ def process_document(self, document_id: str):
                 token_count=token_count,
                 embedding=None
             )
+            db_chunk.id = str(uuid.uuid4()) # Ensure IDs are set if not handled by DB default for bulk
             db_chunks.append(db_chunk)
 
         session.add_all(db_chunks)
         document.chunk_count = len(db_chunks)
         session.commit()
 
+        logger.info("ingest.chunks_stored",
+                    doc_id=document_id,
+                    chunks=len(db_chunks))
+
         # 6. Chain to embed task
         embed_task.embed_chunks.delay(str(document.id))
 
-    except Exception as e:
-        logger.exception(f"Error processing document {document_id}")
+    except Exception as exc:
+        logger.error("ingest.task_failed",
+                     doc_id=document_id,
+                     error=str(exc))
         session.rollback()
         # Reload document to ensure we have a fresh state
         document = session.query(Document).filter(Document.id == document_id).first()
         if document:
             document.status = DocumentStatus.FAILED
-            document.error_message = str(e)
+            document.error_message = str(exc)
             session.commit()
-        raise self.retry(exc=e)
+        raise self.retry(exc=exc)
     finally:
         session.close()

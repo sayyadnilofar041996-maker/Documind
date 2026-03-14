@@ -22,11 +22,13 @@ from app.core.security import (
 from app.models.token import RefreshToken
 from app.models.user import User
 from app.schemas.auth import RegisterRequest, TokenResponse
+import structlog
 
 if TYPE_CHECKING:
     pass
 
 settings = get_settings()
+logger = structlog.get_logger()
 
 
 # ─────────────────────────── Register ────────────────────────────
@@ -59,8 +61,11 @@ async def register_user(db: AsyncSession, payload: RegisterRequest) -> User:
         hashed_password=hash_password(payload.password),
     )
     db.add(user)
-    await db.commit()
     await db.refresh(user)
+    logger.info("auth.user_registered",
+                user_id=str(user.id),
+                email=user.email,
+                username=user.username)
     return user
 
 
@@ -72,9 +77,16 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> User
     if user is None:
         return None
     if not verify_password(password, user.hashed_password):
+        logger.warning("auth.login_failed",
+                       email=email,
+                       reason="invalid_password")
         return None
     if not user.is_active:
         return None
+    
+    logger.info("auth.user_logged_in",
+                user_id=str(user.id),
+                email=user.email)
     return user
 
 
@@ -117,6 +129,8 @@ async def rotate_refresh_token(db: AsyncSession, raw_token: str) -> TokenRespons
     )
 
     if db_token is None:
+        logger.warning("auth.refresh_failed",
+                       reason="token_not_found_or_expired")
         raise ValueError("refresh token not found")
     if db_token.revoked:
         raise ValueError("refresh token has been revoked")
@@ -132,6 +146,8 @@ async def rotate_refresh_token(db: AsyncSession, raw_token: str) -> TokenRespons
     if user is None or not user.is_active:
         await db.commit()
         raise ValueError("user not found or inactive")
+
+    logger.info("auth.token_refreshed", user_id=str(user.id))
 
     # Issue new pair
     access_token = create_access_token(str(user.id))
@@ -165,3 +181,4 @@ async def revoke_refresh_token(db: AsyncSession, raw_token: str) -> None:
     if db_token and not db_token.revoked:
         db_token.revoked = True
         await db.commit()
+        logger.info("auth.user_logged_out", user_id=str(db_token.user_id))
