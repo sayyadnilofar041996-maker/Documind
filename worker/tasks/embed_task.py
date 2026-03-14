@@ -1,5 +1,5 @@
 import time
-import logging
+import structlog
 from datetime import datetime
 from worker.celery_app import app, SessionLocal
 from app.models.document import Document, DocumentStatus
@@ -7,13 +7,14 @@ from app.models.chunk import DocumentChunk
 from app.pipeline.embedder import embed_texts
 from app.core.metrics import embedding_latency_seconds
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 @app.task
 def embed_chunks(document_id: str):
     """
     Generates embeddings for all chunks of a document and updates the database.
     """
+    logger.info("embed.task_started", doc_id=document_id)
     session = SessionLocal()
     try:
         # 1. Load all chunks where embedding IS NULL
@@ -25,7 +26,7 @@ def embed_chunks(document_id: str):
         )
 
         if not chunks:
-            logger.info(f"No pending chunks to embed for document {document_id}")
+            logger.info("embed.task_complete", doc_id=document_id, chunk_count=0, note="No pending chunks")
             return
 
         # 2. Extract texts
@@ -36,7 +37,10 @@ def embed_chunks(document_id: str):
         embeddings = embed_texts(texts)
         elapsed = time.perf_counter() - start_time
         
-        logger.info(f"Embedded {len(texts)} chunks for doc {document_id} in {elapsed:.2f}s")
+        logger.info("embed.vectors_created",
+                    doc_id=document_id,
+                    chunks=len(chunks),
+                    latency_ms=round(elapsed * 1000))
         
         # Record metric
         embedding_latency_seconds.observe(elapsed)
@@ -60,15 +64,21 @@ def embed_chunks(document_id: str):
             document.updated_at = datetime.utcnow()
         
         session.commit()
+        
+        logger.info("embed.task_complete",
+                    doc_id=document_id,
+                    chunk_count=len(chunks))
 
-    except Exception as e:
-        logger.exception(f"Error embedding chunks for document {document_id}")
+    except Exception as exc:
+        logger.error("embed.task_failed",
+                     doc_id=document_id,
+                     error=str(exc))
         session.rollback()
         
         document = session.query(Document).filter(Document.id == document_id).first()
         if document:
             document.status = DocumentStatus.FAILED
-            document.error_message = str(e)
+            document.error_message = str(exc)
             session.commit()
         raise
     finally:
