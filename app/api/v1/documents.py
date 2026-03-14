@@ -6,7 +6,7 @@ Phase   : 2 — File Upload
 
 import uuid
 from typing import Annotated
-from fastapi import APIRouter, Depends, UploadFile, File, Query, status
+from fastapi import APIRouter, Depends, UploadFile, File, Query, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db, get_current_user
@@ -15,6 +15,7 @@ from app.models.document import DocumentStatus
 from app.services.document_service import DocumentService
 from app.schemas.document import DocumentRead, DocumentStatusRead, DocumentStatusFull, ChunkRead
 from app.schemas.common import PaginatedResponse, ErrorResponse
+from app.main import limiter
 
 router = APIRouter()
 doc_service = DocumentService()
@@ -30,9 +31,12 @@ doc_service = DocumentService()
         409: {"model": ErrorResponse},
         413: {"model": ErrorResponse},
         415: {"model": ErrorResponse},
+        429: {"model": ErrorResponse},
     }
 )
+@limiter.limit("50/minute")
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),

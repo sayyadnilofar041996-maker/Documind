@@ -14,14 +14,27 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from prometheus_client import make_asgi_app
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import structlog
 
 from app.config import get_settings
 from app.core.database import init_db
 from app.core import metrics
+from app.core.error_handlers import (
+    http_exception_handler,
+    validation_exception_handler,
+    rate_limit_exceeded_handler,
+    unhandled_exception_handler,
+)
 
 settings = get_settings()
 logger = structlog.get_logger()
+
+
+# ── Rate Limiter ──────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address)
 
 
 # ── Structlog Configuration ───────────────────────────────────
@@ -94,6 +107,9 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Add rate limiter to app state
+    app.state.limiter = limiter
+
     # ── Middleware ────────────────────────────────────────
     # CORS — allow origins based on environment
     app.add_middleware(
@@ -162,63 +178,17 @@ def create_app() -> FastAPI:
             ).observe(duration)
 
     # ── Exception Handlers (RFC 7807) ──────────────────────
-    # All errors return standard Problem Details format:
-    # {type, title, status, detail, instance}
+    # Register rate limit exceeded handler
+    app.add_exception_handler(RateLimitExceeded,
+        rate_limit_exceeded_handler)
 
-    @app.exception_handler(StarletteHTTPException)
-    async def http_exception_handler(
-        request: Request,
-        exc: StarletteHTTPException,
-    ) -> JSONResponse:
-        # If the detail is already an RFC 7807 dict, pass it through
-        if isinstance(exc.detail, dict):
-            content = exc.detail
-        else:
-            content = {
-                "type": f"https://documind.io/errors/{exc.status_code}",
-                "title": str(exc.detail),
-                "status": exc.status_code,
-                "detail": str(exc.detail),
-                "instance": str(request.url),
-            }
-        return JSONResponse(status_code=exc.status_code, content=content)
-
-    @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(
-        request: Request,
-        exc: RequestValidationError,
-    ) -> JSONResponse:
-        return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={
-                "type": "https://documind.io/errors/422",
-                "title": "Validation Error",
-                "status": 422,
-                "detail": exc.errors(),
-                "instance": str(request.url),
-            },
-        )
-
-    @app.exception_handler(Exception)
-    async def unhandled_exception_handler(
-        request: Request,
-        exc: Exception,
-    ) -> JSONResponse:
-        logger.error(
-            "documind.unhandled_exception",
-            error=str(exc),
-            path=str(request.url),
-        )
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "type": "https://documind.io/errors/500",
-                "title": "Internal Server Error",
-                "status": 500,
-                "detail": str(exc) if settings.debug else "An unexpected error occurred.",
-                "instance": str(request.url),
-            },
-        )
+    # Replace existing exception handlers with imported ones
+    app.add_exception_handler(StarletteHTTPException,
+        http_exception_handler)
+    app.add_exception_handler(RequestValidationError,
+        validation_exception_handler)
+    app.add_exception_handler(Exception,
+        unhandled_exception_handler)
 
     # ── Routers ───────────────────────────────────────────
     # Import inside factory to avoid circular imports at module level
