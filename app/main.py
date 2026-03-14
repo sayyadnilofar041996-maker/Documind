@@ -4,6 +4,7 @@ Purpose : FastAPI application factory with lifespan events
 Phase   : 1 — Foundation
 """
 import uuid
+import time
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -17,6 +18,7 @@ import structlog
 
 from app.config import get_settings
 from app.core.database import init_db
+from app.core import metrics
 
 settings = get_settings()
 logger = structlog.get_logger()
@@ -128,6 +130,36 @@ def create_app() -> FastAPI:
                 structlog.contextvars.clear_contextvars()
 
     app.add_middleware(RequestIDMiddleware)
+
+    @app.middleware("http")
+    async def prometheus_metrics_middleware(request: Request, call_next):
+        if request.url.path == "/metrics":
+            return await call_next(request)
+            
+        start_time = time.perf_counter()
+        status_code = 500
+        
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+            return response
+        finally:
+            duration = time.perf_counter() - start_time
+            
+            # Using route.path to avoid high cardinality (UUIDs in URLs)
+            route = request.scope.get("route")
+            endpoint = route.path if route else request.url.path
+            
+            metrics.http_requests_total.labels(
+                method=request.method,
+                endpoint=endpoint,
+                status_code=status_code
+            ).inc()
+            
+            metrics.http_request_duration_seconds.labels(
+                method=request.method,
+                endpoint=endpoint
+            ).observe(duration)
 
     # ── Exception Handlers (RFC 7807) ──────────────────────
     # All errors return standard Problem Details format:
