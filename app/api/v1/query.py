@@ -6,7 +6,7 @@ Phase   : 4 & 5
 
 import uuid
 import time
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
@@ -23,6 +23,7 @@ from app.pipeline.embedder import embed_single
 from app.rag.retriever import retrieve_chunks, format_sources
 from app.rag.chain import run_rag_chain
 from app.config import get_settings
+from app.main import limiter
 
 settings = get_settings()
 router = APIRouter()
@@ -34,10 +35,13 @@ router = APIRouter()
     responses={
         401: {"model": ErrorResponse},
         404: {"model": ErrorResponse},
+        429: {"model": ErrorResponse},
     }
 )
+@limiter.limit("10/minute")
 async def ask_question(
-    request: AskRequest,
+    request: Request,
+    payload: AskRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -52,10 +56,10 @@ async def ask_question(
 
     # Step 1: Session Management
     query_session = None
-    if request.session_id:
+    if payload.session_id:
         # Load existing session and verify ownership
         stmt = select(QuerySession).where(
-            QuerySession.id == request.session_id,
+            QuerySession.id == payload.session_id,
             QuerySession.user_id == current_user.id
         )
         result = await db.execute(stmt)
@@ -67,24 +71,24 @@ async def ask_question(
             )
     else:
         # Create new session
-        title = request.question[:50]
+        title = payload.question[:50]
         query_session = QuerySession(
             user_id=current_user.id,
-            document_id=request.document_id,
+            document_id=payload.document_id,
             title=title
         )
         db.add(query_session)
         await db.flush()  # Populate query_session.id
 
     # Step 2: Question Embedding
-    query_vec = embed_single(request.question)
+    query_vec = embed_single(payload.question)
 
     # Step 3: Chunk Retrieval
     results = await retrieve_chunks(
         query_embedding=query_vec,
         db=db,
         user_id=current_user.id,
-        document_id=request.document_id
+        document_id=payload.document_id
     )
 
     # Step 4: Graceful Fallback if no relevant context
@@ -106,7 +110,7 @@ async def ask_question(
 
         # Step 6: RAG Chain Execution
         answer, prompt_tokens = await run_rag_chain(
-            question=request.question,
+            question=payload.question,
             chunks=results,
             history=messages,
             db=db
@@ -120,7 +124,7 @@ async def ask_question(
     user_msg = QueryMessage(
         session_id=query_session.id,
         role=MessageRole.user,
-        content=request.question
+        content=payload.question
     )
     
     # Save assistant answer
