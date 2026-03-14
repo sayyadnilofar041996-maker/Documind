@@ -1,23 +1,36 @@
 """
 DocuMind - api/v1/query.py
+<<<<<<< HEAD
 Purpose : Q&A endpoints — ask question (RAG), session management
 Phase   : 4 & 5
+=======
+Purpose : Q&A endpoints — ask question (RAG), list sessions
+Phase   : 4 — Query System
+>>>>>>> 606957138cbc728d32f960f05b6e94748ff722e5
 """
 
 import uuid
 import time
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+<<<<<<< HEAD
 from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
+=======
+from sqlalchemy import select
+>>>>>>> 606957138cbc728d32f960f05b6e94748ff722e5
 
 from app.dependencies import get_db, get_current_user
 from app.models.user import User
 from app.models.session import QuerySession, QueryMessage, MessageRole
+<<<<<<< HEAD
 from app.schemas.query import (
     AskRequest, AskResponse, SourceChunk,
     SessionListResponse, SessionDetailResponse, MessageResponse
 )
+=======
+from app.schemas.query import AskRequest, AskResponse, SourceChunk
+>>>>>>> 606957138cbc728d32f960f05b6e94748ff722e5
 from app.schemas.common import ErrorResponse
 from app.pipeline.embedder import embed_single
 from app.rag.retriever import retrieve_chunks, format_sources
@@ -77,9 +90,17 @@ async def ask_question(
         await db.flush()  # Populate query_session.id
 
     # Step 2: Question Embedding
+<<<<<<< HEAD
     query_vec = embed_single(request.question)
 
     # Step 3: Chunk Retrieval
+=======
+    # Runs CPU-bound embedding in the same process (fast for single strings)
+    query_vec = embed_single(request.question)
+
+    # Step 3: Chunk Retrieval
+    # Uses pgvector cosine similarity search
+>>>>>>> 606957138cbc728d32f960f05b6e94748ff722e5
     results = await retrieve_chunks(
         query_embedding=query_vec,
         db=db,
@@ -93,7 +114,12 @@ async def ask_question(
         sources = []
         prompt_tokens = 0
     else:
+<<<<<<< HEAD
         # Step 5: History Assembly
+=======
+        # Step 5: Charge History
+        # Retrieve last N messages (N user + N assistant pairs)
+>>>>>>> 606957138cbc728d32f960f05b6e94748ff722e5
         stmt = (
             select(QueryMessage)
             .where(QueryMessage.session_id == query_session.id)
@@ -102,9 +128,16 @@ async def ask_question(
         )
         history_result = await db.execute(stmt)
         messages = list(history_result.scalars().all())
+<<<<<<< HEAD
         messages.reverse()  # Chronological order
 
         # Step 6: RAG Chain Execution
+=======
+        messages.reverse()  # Chronological order [oldest -> newest]
+
+        # Step 6: RAG Chain Execution
+        # Orchestrates prompt assembly and LLM call
+>>>>>>> 606957138cbc728d32f960f05b6e94748ff722e5
         answer, prompt_tokens = await run_rag_chain(
             question=request.question,
             chunks=results,
@@ -142,6 +175,7 @@ async def ask_question(
         latency_ms=latency_ms,
         sources=[SourceChunk(**src) for src in sources]
     )
+<<<<<<< HEAD
 
 
 @router.get(
@@ -295,3 +329,5 @@ async def delete_session(
     await db.delete(query_session)
     await db.commit()
     return None
+=======
+>>>>>>> 606957138cbc728d32f960f05b6e94748ff722e5

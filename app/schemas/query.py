@@ -1,5 +1,6 @@
 """
 DocuMind - schemas/query.py
+<<<<<<< HEAD
 Purpose : Pydantic v2 schemas for RAG query system, sessions, and messages
 Phase   : 5 — Session Management
 """
@@ -11,6 +12,16 @@ from pydantic import BaseModel, Field, ConfigDict
 
 # ── Existing Query Schemas ────────────────────────────────────
 
+=======
+Purpose : Pydantic models for RAG query system — requests, responses, sources
+Phase   : 4 — Query System
+"""
+
+import uuid
+from pydantic import BaseModel, Field, ConfigDict
+
+
+>>>>>>> 606957138cbc728d32f960f05b6e94748ff722e5
 class AskRequest(BaseModel):
     """Schema for a query request."""
     model_config = ConfigDict(from_attributes=True)
@@ -39,6 +50,7 @@ class AskResponse(BaseModel):
     session_id: uuid.UUID
     latency_ms: int
     sources: list[SourceChunk]
+<<<<<<< HEAD
 
 
 # ── New Session Schemas ───────────────────────────────────────
@@ -75,3 +87,5 @@ class SessionDetailResponse(BaseModel):
     document_id: uuid.UUID | None
     messages: list[MessageResponse]
     created_at: datetime
+=======
+>>>>>>> 606957138cbc728d32f960f05b6e94748ff722e5
