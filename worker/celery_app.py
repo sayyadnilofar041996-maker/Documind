@@ -14,6 +14,8 @@ app = Celery(
     include=["worker.tasks"]  # Ensure tasks are discovered
 )
 
+from celery.schedules import crontab
+
 # ── Celery Settings ────────────────────────────────────────────
 # task_acks_late=True           -> Task is acknowledged AFTER execution (vs before)
 # worker_prefetch_multiplier=1 -> One task per worker at a time (better for long tasks)
@@ -25,6 +27,12 @@ app.conf.update(
     worker_concurrency=settings.celery_worker_concurrency,
     task_soft_time_limit=settings.celery_task_soft_time_limit,
     task_time_limit=settings.celery_task_time_limit,
+    beat_schedule={
+        "nightly-cleanup": {
+            "task": "cleanup_failed_documents",
+            "schedule": crontab(hour=0, minute=0),
+        },
+    },
 )
 
 """
