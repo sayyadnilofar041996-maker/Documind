@@ -61,6 +61,7 @@ async def register_user(db: AsyncSession, payload: RegisterRequest) -> User:
         hashed_password=hash_password(payload.password),
     )
     db.add(user)
+    await db.commit()
     await db.refresh(user)
     logger.info("auth.user_registered",
                 user_id=str(user.id),

@@ -27,16 +27,12 @@ api_router.include_router(
 )
 
 # ── Auth (available at /api/v1/auth/...) ──────────────────────
-# Placeholder — full implementation in T-1.4
-try:
-    from app.api.v1.auth import router as auth_router
-    api_router.include_router(
-        auth_router,
-        prefix="/auth",
-        tags=["Authentication"],
-    )
-except ImportError:
-    pass  # auth router not implemented yet — skip silently
+from app.api.v1.auth import router as auth_router
+api_router.include_router(
+    auth_router,
+    prefix="/auth",
+    tags=["Authentication"],
+)
 
 # ── Documents (available at /api/v1/documents/...) ────────────
 from app.api.v1.documents import router as documents_router

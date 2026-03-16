@@ -44,11 +44,18 @@ async def http_exception_handler(
     exc: StarletteHTTPException,
 ) -> JSONResponse:
     """Handle all HTTP exceptions (401, 403, 404, etc.)"""
+    # If detail is already a dict (e.g. from _problem factory), return it directly
+    if isinstance(exc.detail, dict):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=exc.detail,
+        )
+        
     return rfc7807_response(
         request=request,
         status_code=exc.status_code,
-        title=exc.detail,
-        detail=exc.detail,
+        title="Error occurred",
+        detail=str(exc.detail),
     )
 
 

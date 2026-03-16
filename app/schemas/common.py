@@ -5,6 +5,9 @@ Phase   : 1 — Foundation
 """
 
 from pydantic import BaseModel, ConfigDict, field_validator
+from typing import Generic, TypeVar, List
+
+T = TypeVar("T")
 
 
 # ── Pagination ────────────────────────────────────────────────
@@ -73,7 +76,7 @@ class ReadinessResponse(BaseModel):
 
 
 # ── Generic List Response ─────────────────────────────────────
-class PaginatedResponse(BaseModel):
+class PaginatedResponse(BaseModel, Generic[T]):
     """
     Generic wrapper for paginated list responses.
     
@@ -87,7 +90,7 @@ class PaginatedResponse(BaseModel):
     """
     model_config = ConfigDict(from_attributes=True)
 
-    items: list
+    items: List[T]
     total: int
     page: int
     page_size: int
