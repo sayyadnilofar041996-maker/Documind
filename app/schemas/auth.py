@@ -7,7 +7,7 @@ import re
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_config
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 
 _ALPHANUM_RE = re.compile(r"^[a-zA-Z0-9_]+$")
 
@@ -15,7 +15,7 @@ _ALPHANUM_RE = re.compile(r"^[a-zA-Z0-9_]+$")
 # ─────────────────────────── Request Schemas ─────────────────────
 
 class RegisterRequest(BaseModel):
-    model_config = model_config(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True)
 
     email: EmailStr = Field(..., description="Valid e-mail address")
     username: str = Field(
@@ -41,7 +41,7 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    model_config = model_config(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True)
 
     email: EmailStr = Field(..., description="Registered e-mail address")
     password: str = Field(..., description="Account password")
@@ -60,7 +60,7 @@ class TokenResponse(BaseModel):
 
 
 class UserResponse(BaseModel):
-    model_config = model_config(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     email: str

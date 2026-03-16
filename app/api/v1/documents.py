@@ -52,7 +52,7 @@ async def upload_document(
 # ── GET / ─────────────────────────────────────────────────────
 @router.get(
     "/",
-    response_model=PaginatedResponse,
+    response_model=PaginatedResponse[DocumentRead],
 )
 async def list_documents(
     page: int = Query(1, ge=1),
