@@ -1,5 +1,8 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.pipeline.parsers import ParsedChunk
+from app.config import get_settings
+
+settings = get_settings()
 
 def chunk_pages(pages: list[ParsedChunk]) -> list[ParsedChunk]:
     """
@@ -12,9 +15,9 @@ def chunk_pages(pages: list[ParsedChunk]) -> list[ParsedChunk]:
         list[ParsedChunk]: A more granular list of chunks with page number attribution.
     """
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=512,
-        chunk_overlap=50,
-        separators=["\n\n", "\n", ". ", " ", ""]
+        chunk_size=settings.chunk_size,
+        chunk_overlap=settings.chunk_overlap,
+        separators=settings.chunk_separators
     )
     
     final_chunks = []

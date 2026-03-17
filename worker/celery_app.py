@@ -1,8 +1,10 @@
 from celery import Celery
 from sqlalchemy import create_engine
 from app.config import get_settings
+from app.core.logging import setup_logging
 
 settings = get_settings()
+setup_logging()
 
 # ── Celery App Configuration ───────────────────────────────────
 # We use Redis as both broker and backend.
@@ -50,8 +52,8 @@ sync_database_url = settings.database_url.replace("asyncpg", "psycopg2")
 
 engine = create_engine(
     sync_database_url,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=settings.db_pool_size * 2,
+    max_overflow=settings.db_max_overflow * 2,
     pool_pre_ping=True,
 )
 

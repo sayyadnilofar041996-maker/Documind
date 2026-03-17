@@ -50,59 +50,50 @@ async def liveness():
 async def readiness():
     """
     Kubernetes readiness probe.
-    Checks ALL dependencies before returning healthy.
-    Returns 503 if any dependency is down.
+    Checks DB, Redis, and Embedding Model.
     """
     checks = {
-        "db": "error",
-        "redis": "error",
-        "embedding_model": "error",
+        "db": "down",
+        "redis": "down",
+        "embedding_model": "not_loaded",
     }
     all_healthy = True
 
-    # 1. Check PostgreSQL (SELECT 1)
+    # 1. DB Check
     try:
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
-        checks["db"] = "ok"
+        checks["db"] = "up"
     except Exception as e:
-        logger.error("health.db_check_failed", error=str(e))
+        logger.error("health.db_failure", error=str(e))
         all_healthy = False
 
-    # 2. Check Redis (PING)
+    # 2. Redis Check with Timeout
     try:
         import redis.asyncio as aioredis
-        r = aioredis.from_url(settings.redis_url)
+        r = aioredis.from_url(settings.redis_url, socket_timeout=2)
         await r.ping()
         await r.aclose()
-        checks["redis"] = "ok"
+        checks["redis"] = "up"
     except Exception as e:
-        logger.error("health.redis_check_failed", error=str(e))
+        logger.error("health.redis_failure", error=str(e))
         all_healthy = False
 
-    # 3. Check Embedding Model (Check lru_cache status)
+    # 3. Embedding Model Check
     try:
         from app.pipeline.embedder import get_embedder
-        # We check cache_info to see if it has been called successfully at least once
-        # (Lifespan pre-warms it, so this should be > 0)
-        cache_info = get_embedder.cache_info()
-        if cache_info.currsize > 0:
-            checks["embedding_model"] = "loaded"
+        # Checking if the function is cached and has content
+        if get_embedder.cache_info().currsize > 0:
+            checks["embedding_model"] = "up"
         else:
-            # If not in cache, the model isn't "loaded" yet (pre-warming failed or hasn't run)
-            all_healthy = False
+            # Try to trigger a load (warmup)
+            get_embedder()
+            checks["embedding_model"] = "up"
     except Exception as e:
-        logger.error("health.embedder_check_failed", error=str(e))
+        logger.error("health.embedder_failure", error=str(e))
         all_healthy = False
 
-    # ── Response ──────────────────────────────────────────
-    http_status = (
-        status.HTTP_200_OK
-        if all_healthy
-        else status.HTTP_503_SERVICE_UNAVAILABLE
-    )
-
     return JSONResponse(
-        status_code=http_status,
-        content=checks
+        status_code=status.HTTP_200_OK if all_healthy else status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"status": "healthy" if all_healthy else "unhealthy", "checks": checks}
     )

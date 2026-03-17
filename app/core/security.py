@@ -8,6 +8,12 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 from jose import JWTError, jwt
+import bcrypt
+
+# Workaround for passlib 1.7.4 compatibility with bcrypt 4.x
+if not hasattr(bcrypt, "__about__"):
+    bcrypt.__about__ = type("bcrypt_about", (), {"__version__": bcrypt.__version__})
+
 from passlib.context import CryptContext
 
 from app.config import get_settings

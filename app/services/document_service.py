@@ -1,156 +1,64 @@
 """
 DocuMind - services/document_service.py
-Purpose : Document business logic — upload, validate, list, delete
-Phase   : 2 — File Upload
+Purpose : Document business logic — orchestration between DB and UploadService
 """
-
-import os
 import uuid
-import hashlib
-import aiofiles
-import magic
+import structlog
 from typing import List, Tuple
-from fastapi import UploadFile, HTTPException, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from celery.result import AsyncResult
-import structlog
 
 from app.config import get_settings
-from app.models.document import Document, FileType, DocumentStatus
+from app.models.document import Document, DocumentStatus
 from app.models.chunk import DocumentChunk
-from app.schemas.document import DocumentCreate, DocumentUpdate
+from app.services.upload_service import UploadService
+from app.core.exceptions import DocumentError
 from worker.celery_app import app as celery_app
+from worker.tasks.ingest_task import ingest_task
 
 settings = get_settings()
 logger = structlog.get_logger()
-
-# ── Extension to FileType Mapping ────────────────────────────
-EXT_MAPPING = {
-    ".pdf": FileType.PDF,
-    ".docx": FileType.DOCX,
-    ".py": FileType.PYTHON,
-    ".js": FileType.JAVASCRIPT,
-    ".ts": FileType.TYPESCRIPT,
-    ".md": FileType.MARKDOWN,
-}
-
-# ── MIME Type to FileType Mapping ────────────────────────────
-MIME_MAPPING = {
-    "application/pdf": FileType.PDF,
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": FileType.DOCX,
-    "text/x-python": FileType.PYTHON,
-    "text/javascript": FileType.JAVASCRIPT,
-    "application/javascript": FileType.JAVASCRIPT,
-    "text/typescript": FileType.TYPESCRIPT,
-    "text/markdown": FileType.MARKDOWN,
-    "text/plain": FileType.MARKDOWN,  # fallback for md
-}
-
+upload_service = UploadService()
 
 class DocumentService:
     """
-    Handles business logic for documents: storage, validation, and DB sync.
+    Handles higher-level business logic for documents.
+    Delegates file-level operations to UploadService.
     """
-
-    @staticmethod
-    async def validate_file(file: UploadFile) -> Tuple[FileType, str]:
-        """
-        Validates file extension, size, and magic bytes.
-        Returns (FileType, extension) or raises HTTPException.
-        """
-        # 1. Check extension
-        filename = file.filename or "unknown"
-        ext = os.path.splitext(filename)[1].lower()
-        if ext not in EXT_MAPPING:
-            raise HTTPException(
-                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                detail=f"Unsupported file extension: {ext}"
-            )
-
-        # 2. Check size (settings.max_file_size_mb)
-        # file.size is available in FastAPI 0.96+
-        content = await file.read()
-        file_size = len(content)
-        max_size = settings.max_file_size_mb * 1024 * 1024
-        if file_size > max_size:
-            raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail=f"File too large. Max size is {settings.max_file_size_mb}MB"
-            )
-        await file.seek(0)  # Reset for later use
-
-        # 3. Check MIME type via magic bytes
-        # magic.from_buffer returns MIME type string
-        mime = magic.from_buffer(content[:2048], mime=True)
-        if mime not in MIME_MAPPING:
-             # Some text files might be detected as text/plain
-             if mime == "text/plain" and ext in [".py", ".js", ".ts", ".md"]:
-                 pass # allowed
-             else:
-                logger.warning("document.invalid_mime", mime=mime, ext=ext)
-                raise HTTPException(
-                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                    detail=f"MIME type mismatch or unsupported: {mime}"
-                )
-
-        return EXT_MAPPING[ext], ext
-
-    @staticmethod
-    async def compute_sha256(file: UploadFile) -> str:
-        """Computes SHA256 hash of file content."""
-        sha256_hash = hashlib.sha256()
-        # Read in chunks to avoid memory issues for large files
-        await file.seek(0)
-        while chunk := await file.read(65536):
-            sha256_hash.update(chunk)
-        await file.seek(0)
-        return sha256_hash.hexdigest()
 
     async def upload_document(
         self, 
         db: AsyncSession, 
-        file: UploadFile, 
+        file: any, # UploadFile
         user_id: uuid.UUID
     ) -> Document:
         """
         Full upload pipeline:
-        1. Validate
-        2. Hash & deduplicate check (user-level)
-        3. Save to disk
+        1. Validate via UploadService
+        2. Hash & deduplicate
+        3. Save to disk via UploadService
         4. Create DB record
+        5. Dispatch Celery task
         """
         # 1. Validation
-        file_type, ext = await self.validate_file(file)
+        file_type, ext = await upload_service.validate_file(file)
         
         # 2. Hashing & Deduplication
-        file_hash = await self.compute_sha256(file)
-        
-        # Check if user already uploaded this exact file
+        file_hash = await upload_service.compute_hash(file)
         stmt = select(Document).where(
             Document.user_id == user_id,
             Document.file_sha256 == file_hash
         )
         existing = await db.execute(stmt)
         if existing.scalar_one_or_none():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="You have already uploaded this document."
-            )
+            raise DocumentError("You have already uploaded this document.")
 
-        # 3. Save to Disk
-        stored_filename = f"{uuid.uuid4()}{ext}"
-        upload_path = os.path.join("uploads", stored_filename)
-        os.makedirs("uploads", exist_ok=True)
+        # 3. Secure Naming & Storage
+        stored_filename = await upload_service.get_secure_filename(file.filename, ext)
+        file_size = await upload_service.save_to_disk(file, stored_filename)
 
-        await file.seek(0)
-        file_size = 0
-        async with aiofiles.open(upload_path, "wb") as out_file:
-            while content := await file.read(65536):
-                await out_file.write(content)
-                file_size += len(content)
-
-        # 4. Create DB Record
+        # 4. DB Record
         doc = Document(
             user_id=user_id,
             original_filename=file.filename,
@@ -160,41 +68,42 @@ class DocumentService:
             file_sha256=file_hash,
             status=DocumentStatus.PENDING
         )
-        
         db.add(doc)
         await db.commit()
         await db.refresh(doc)
         
-        logger.info(
-            "document.uploaded",
-            doc_id=str(doc.id),
-            filename=file.filename,
-            file_size=file_size,
-            user_id=str(user_id)
-        )
+        # 5. Background Task
+        task = ingest_task.delay(str(doc.id))
         
-        # TODO: Phase 3 -> Dispatch Celery task for ingestion
+        doc.celery_task_id = task.id
+        doc.status = DocumentStatus.PROCESSING
+        await db.commit()
+        await db.refresh(doc)
+
+        logger.info("document.ingestion_dispatched", doc_id=str(doc.id), task_id=task.id)
         return doc
 
-    async def get_document(
+    async def delete_document(
         self, 
         db: AsyncSession, 
         doc_id: uuid.UUID, 
         user_id: uuid.UUID
-    ) -> Document:
+    ) -> None:
+        """Deletes document record and associated file from disk."""
+        doc = await self.get_document(db, doc_id, user_id)
+        await upload_service.delete_file(doc.stored_filename)
+        await db.delete(doc)
+        await db.commit()
+        logger.info("document.deleted", doc_id=str(doc_id), user_id=str(user_id))
+
+    async def get_document(self, db: AsyncSession, doc_id: uuid.UUID, user_id: uuid.UUID) -> Document:
         """Retrieves a document and verifies ownership."""
-        stmt = select(Document).where(
-            Document.id == doc_id,
-            Document.user_id == user_id
-        )
+        stmt = select(Document).where(Document.id == doc_id, Document.user_id == user_id)
         result = await db.execute(stmt)
         doc = result.scalar_one_or_none()
-        
         if not doc:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Document not found"
-            )
+            from fastapi import HTTPException, status
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
         return doc
 
     async def list_documents(
@@ -207,58 +116,19 @@ class DocumentService:
     ) -> Tuple[List[Document], int]:
         """Paginated list of user documents."""
         offset = (page - 1) * page_size
-        
-        # Query for items
         stmt = select(Document).where(Document.user_id == user_id)
         if status_filter:
             stmt = stmt.where(Document.status == status_filter)
-        
         stmt = stmt.order_by(Document.created_at.desc()).offset(offset).limit(page_size)
         result = await db.execute(stmt)
         docs = list(result.scalars().all())
         
-        # Query for total count
         count_stmt = select(func.count(Document.id)).where(Document.user_id == user_id)
         if status_filter:
-             count_stmt = count_stmt.where(Document.status == status_filter)
-        
+            count_stmt = count_stmt.where(Document.status == status_filter)
         count_result = await db.execute(count_stmt)
         total = count_result.scalar() or 0
-        
         return docs, total
-
-    async def delete_document(
-        self, 
-        db: AsyncSession, 
-        doc_id: uuid.UUID, 
-        user_id: uuid.UUID
-    ) -> None:
-        """Deletes document record and associated file from disk."""
-        doc = await self.get_document(db, doc_id, user_id)
-        
-        # 1. Remove from disk
-        file_path = os.path.join("uploads", doc.stored_filename)
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            else:
-                logger.warning("document.file_not_found_on_disk",
-                               doc_id=str(doc_id),
-                               stored_filename=doc.stored_filename)
-        except Exception as exc:
-            logger.error("document.delete_failed",
-                         doc_id=str(doc_id),
-                         error=str(exc))
-
-        # 2. Remove from DB
-        await db.delete(doc)
-        await db.commit()
-        
-        logger.info(
-            "document.deleted", 
-            doc_id=str(doc_id), 
-            user_id=str(user_id)
-        )
 
     async def get_document_chunks(
         self,
@@ -268,55 +138,34 @@ class DocumentService:
         page: int = 1,
         page_size: int = 20
     ) -> Tuple[List[DocumentChunk], int]:
-        """
-        Retrieves a paginated list of chunks for a document.
-        Verifies ownership.
-        """
-        # Ensure document exists and user owns it
+        """Retrieves chunks for a document."""
         await self.get_document(db, doc_id, user_id)
-        
         offset = (page - 1) * page_size
-        stmt = select(DocumentChunk).where(
-            DocumentChunk.document_id == doc_id
-        ).order_by(DocumentChunk.chunk_index).offset(offset).limit(page_size)
-        
+        stmt = select(DocumentChunk).where(DocumentChunk.document_id == doc_id).order_by(DocumentChunk.chunk_index).offset(offset).limit(page_size)
         result = await db.execute(stmt)
         chunks = list(result.scalars().all())
         
-        count_stmt = select(func.count(DocumentChunk.id)).where(
-            DocumentChunk.document_id == doc_id
-        )
+        count_stmt = select(func.count(DocumentChunk.id)).where(DocumentChunk.document_id == doc_id)
         count_result = await db.execute(count_stmt)
         total = count_result.scalar() or 0
-        
         return chunks, total
 
-    async def get_enhanced_status(
-        self,
-        db: AsyncSession,
-        doc_id: uuid.UUID,
-        user_id: uuid.UUID
-    ) -> dict:
-        """
-        Fetches document status and merges it with live Celery task status.
-        """
+    async def get_enhanced_status(self, db: AsyncSession, doc_id: uuid.UUID, user_id: uuid.UUID) -> dict:
+        """Fetches status and merges with live Celery state."""
         doc = await self.get_document(db, doc_id, user_id)
-        
         celery_state = None
-        progress_pct = 0.0
-        
         if doc.celery_task_id:
             res = AsyncResult(doc.celery_task_id, app=celery_app)
             celery_state = res.state
             
-        # Map progress based on status
+        progress_pct = 0.0
         if doc.status == DocumentStatus.READY:
             progress_pct = 100.0
         elif doc.status == DocumentStatus.PROCESSING:
-            # Simple heuristic since we don't have granular step tracking yet
             progress_pct = 50.0
-        elif doc.status == DocumentStatus.FAILED:
-            progress_pct = 0.0
+            
+        # Ensure updated_at is loaded before returning dict
+        updated_at = doc.updated_at
             
         return {
             "id": doc.id,

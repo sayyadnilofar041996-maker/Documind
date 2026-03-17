@@ -1,11 +1,10 @@
-"""
-DocuMind - pipeline/parsers/code_parser.py
-Purpose : Code and Markdown document parser with syntax-aware splitting.
-"""
 import ast
 import re
+import structlog
 from typing import List
 from app.pipeline.parsers import ParsedChunk
+
+logger = structlog.get_logger()
 
 
 def _split_python(content: str) -> List[str]:
@@ -24,12 +23,7 @@ def _split_python(content: str) -> List[str]:
 
         for node in nodes:
             # Get everything from last_index up to the start of this node
-            # This captures comments/imports before the definition
             start_line = node.lineno - 1
-            if start_line > last_index:
-                # If there's substantial content between blocks, we could chunk it
-                # For now, we'll keep it with the following block or as a prefix
-                pass
             
             # Find the end of this node (inclusive)
             end_line = getattr(node, "end_lineno", start_line + 1)
@@ -50,20 +44,18 @@ def _split_python(content: str) -> List[str]:
                 
         return chunks
     except SyntaxError:
-        # Fallback to simple blank line splitting if code is invalid or snippet
+        # Fallback to simple blank line splitting
+        logger.warning("parser.code_syntax_error", msg="Falling back to simple splitting")
         return [c.strip() for c in re.split(r'\n\s*\n', content) if c.strip()]
 
 
 def _split_js_ts(content: str) -> List[str]:
     """Splits JS/TS by blank lines between top-level blocks."""
-    # Split by double newline or more to preserve logical blocks
     return [c.strip() for c in re.split(r'\n\s*\n', content) if c.strip()]
 
 
 def _split_markdown(content: str) -> List[str]:
     """Splits Markdown by ## headings."""
-    # Split by any level-2 heading (##)
-    # We use a lookahead to keep the delimiter in the result
     chunks = re.split(r'(?=\n##\s+|^##\s+)', content)
     return [c.strip() for c in chunks if c.strip()]
 
@@ -79,8 +71,14 @@ def parse_code(file_path: str, file_type: str) -> List[ParsedChunk]:
     Returns:
         List[ParsedChunk]: List of extracted chunks.
     """
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read()
+    logger.info("parser.code_started", path=file_path, type=file_type)
+    
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception as e:
+        logger.error("parser.code_read_failed", path=file_path, error=str(e))
+        raise
 
     file_type = file_type.lower().lstrip('.')
     
@@ -91,15 +89,15 @@ def parse_code(file_path: str, file_type: str) -> List[ParsedChunk]:
     elif file_type == 'md':
         raw_chunks = _split_markdown(content)
     else:
-        # Fallback for unknown types - generic block splitting
         raw_chunks = [c.strip() for c in re.split(r'\n\s*\n', content) if c.strip()]
 
     parsed_chunks = []
     for i, text in enumerate(raw_chunks):
         parsed_chunks.append(ParsedChunk(
             text=text,
-            page_number=1,  # No real pages in code
+            page_number=1,
             chunk_index=i
         ))
         
+    logger.info("parser.code_finished", path=file_path, chunks=len(parsed_chunks))
     return parsed_chunks

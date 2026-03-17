@@ -21,6 +21,10 @@ mock_st = MagicMock()
 mock_st.__spec__ = MagicMock()
 sys.modules["sentence_transformers"] = mock_st
 
+mock_fe = MagicMock()
+mock_fe.__spec__ = MagicMock()
+sys.modules["fastembed"] = mock_fe
+
 # Mock PostgreSQL specific types for SQLite compat in tests
 pg_mock = MagicMock()
 pg_mock.JSONB = JSON
@@ -63,7 +67,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from unittest.mock import patch
 
 from app.main import app
-from app.core.database import Base
+from app.models.base import Base
 from app.dependencies import get_db
 
 # ── Pytest Asyncio Configuration ──────────────────────────────
@@ -94,7 +98,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
     async with test_engine.begin() as conn:
         # Create all tables (models must be loaded)
-        from app.models import user, document, chunk, session, token
+        from app import models  # Importing the models package loads all models
         await conn.run_sync(Base.metadata.create_all)
         
     async with TestSessionLocal() as session:

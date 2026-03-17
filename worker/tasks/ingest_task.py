@@ -1,6 +1,7 @@
 import os
 import structlog
 import uuid
+from app.core import metrics
 from worker.celery_app import app, SessionLocal
 from worker.tasks import embed_task
 from app.models.document import Document, DocumentStatus, FileType
@@ -15,7 +16,7 @@ logger = structlog.get_logger()
 settings = get_settings()
 
 @app.task(bind=True, max_retries=3, default_retry_delay=60)
-def process_document(self, document_id: str):
+def ingest_task(self, document_id: str):
     """
     Parses a document, chunks the text, and stores it in the database.
     Then chains to the embedding task.
@@ -92,8 +93,10 @@ def process_document(self, document_id: str):
 
         # 6. Chain to embed task
         embed_task.embed_chunks.delay(str(document.id))
+        metrics.documents_processed_total.labels(status="success").inc()
 
     except Exception as exc:
+        metrics.documents_processed_total.labels(status="failed").inc()
         logger.error("ingest.task_failed",
                      doc_id=document_id,
                      error=str(exc))
