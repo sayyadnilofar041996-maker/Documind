@@ -26,7 +26,7 @@ ENV TRANSFORMERS_CACHE=/app/.cache/huggingface
 # libpq-dev  → needed for PostgreSQL driver inside worker tasks
 # NOTE: no curl needed (worker has no health check endpoint)
 # NOTE: no libmagic1 needed (worker doesn't validate uploads)
-RUN apt-get update && apt-get install -y \
+RUN apt-get update --fix-missing && apt-get install -y \
     gcc \
     g++ \
     libpq-dev \

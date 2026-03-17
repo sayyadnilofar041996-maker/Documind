@@ -21,7 +21,7 @@ ENV PYTHONUNBUFFERED=1
 # libpq-dev  → needed for asyncpg (PostgreSQL driver)
 # curl       → needed for health check in docker-compose
 # libmagic1  → needed for python-magic (file type validation)
-RUN apt-get update && apt-get install -y \
+RUN apt-get update --fix-missing && apt-get install -y \
     gcc \
     g++ \
     libpq-dev \

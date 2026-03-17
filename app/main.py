@@ -80,8 +80,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         get_embedder()
         logger.info(
             "documind.embedder_ready",
-            model=settings.embedding_model,
-            device=settings.embedding_device,
+            model="sentence-transformers/all-MiniLM-L6-v2",
         )
     except Exception as e:
         logger.warning("documind.embedder_warmup_failed", error=str(e))
