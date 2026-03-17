@@ -8,6 +8,7 @@ from sqlalchemy import String, Integer, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.sql import func
 import uuid
 import enum
+from datetime import datetime
 from . import Base
 
 class FileType(str, enum.Enum):
@@ -38,8 +39,8 @@ class Document(Base):
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)
     celery_task_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     user = relationship("User", back_populates="documents")
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")

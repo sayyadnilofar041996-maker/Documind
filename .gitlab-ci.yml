@@ -1,0 +1,35 @@
+# DocuMind CI/CD Configuration (Example for GitLab CI)
+# Purpose: Ensure structural integrity and automated testing on every push.
+
+stages:
+  - test
+  - build
+
+variables:
+  POSTGRES_DB: documind_test
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+  DATABASE_URL: "postgresql+psycopg2://postgres:password@postgres:5432/documind_test"
+  REDIS_URL: "redis://redis:6379/0"
+
+test:
+  stage: test
+  image: python:3.11-slim
+  services:
+    - postgres:15-alpine
+    - redis:7-alpine
+  before_script:
+    - apt-get update && apt-get install -y libmagic1
+    - pip install -r requirements.txt
+  script:
+    - pytest tests/
+  only:
+    - main
+    - develop
+
+build:
+  stage: build
+  script:
+    - echo "Building production docker image..."
+  only:
+    - main

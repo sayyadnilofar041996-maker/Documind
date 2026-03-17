@@ -1,21 +1,9 @@
-"""
-DocuMind - pipeline/parsers/__init__.py
-Purpose : Shared data contract for all DocuMind parsers.
-This module defines the standard interface for extracted document content.
-"""
-from dataclasses import dataclass
+# DocuMind - pipeline/parsers package
 
+from pydantic import BaseModel
 
-@dataclass
-class ParsedChunk:
-    """
-    Standard data contract for a single chunk of parsed document content.
-    
-    Attributes:
-        text (str): The extracted text content from the document.
-        page_number (int): The page number this chunk came from.
-        chunk_index (int): The position index of this chunk within the document.
-    """
+class ParsedChunk(BaseModel):
+    """Internal model for parsed chunks before being stored in the database."""
     text: str
-    page_number: int
+    page_number: int | None = None
     chunk_index: int

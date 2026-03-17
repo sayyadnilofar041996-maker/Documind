@@ -22,7 +22,7 @@ import structlog
 from app.config import get_settings
 from app.core.database import init_db
 from app.core import metrics
-from app.core.error_handlers import (
+from app.core.exceptions import (
     http_exception_handler,
     validation_exception_handler,
     rate_limit_exceeded_handler,
@@ -32,28 +32,19 @@ from app.core.error_handlers import (
 settings = get_settings()
 logger = structlog.get_logger()
 
+# ── Rate Limiter ──────────────────────────────────────────────
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=[f"{settings.rate_limit_requests}/{settings.rate_limit_window_seconds} seconds"]
+)
+
+
+from app.core.logging import setup_logging
+
+# Initialize logging at module level
+setup_logging()
 
 # ── Rate Limiter ──────────────────────────────────────────────
-limiter = Limiter(key_func=get_remote_address)
-
-
-# ── Structlog Configuration ───────────────────────────────────
-def configure_logging() -> None:
-    """Configure structlog for JSON structured logging in prod, pretty in debug."""
-    processors = [
-        structlog.contextvars.merge_contextvars,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.add_logger_name,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-    ]
-    if settings.debug:
-        processors.append(structlog.dev.ConsoleRenderer())
-    else:
-        processors.append(structlog.processors.JSONRenderer())
-
-    structlog.configure(processors=processors)
 
 
 # ── Lifespan ──────────────────────────────────────────────────
@@ -177,6 +168,7 @@ def create_app() -> FastAPI:
             ).observe(duration)
 
     # ── Exception Handlers (RFC 7807) ──────────────────────
+    app.state.limiter = limiter
     # Register rate limit exceeded handler
     app.add_exception_handler(RateLimitExceeded,
         rate_limit_exceeded_handler)

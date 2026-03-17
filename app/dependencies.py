@@ -102,7 +102,6 @@ async def get_current_user(
     return user
 
 
-# ── Optional User Dependency ──────────────────────────────────
 async def get_optional_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),
@@ -117,3 +116,13 @@ async def get_optional_user(
         return await get_current_user(credentials, db)
     except HTTPException:
         return None
+
+
+# ── Service Dependencies ───────────────────────────────────────
+def get_document_service():
+    from app.services.document_service import DocumentService
+    return DocumentService()
+
+def get_query_service():
+    from app.services.query_service import QueryService
+    return QueryService()

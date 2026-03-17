@@ -11,6 +11,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import rfc7807_response
 from app.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.schemas.auth import (
@@ -23,26 +24,6 @@ from app.schemas.auth import (
 from app.services import auth_service
 
 router = APIRouter(tags=["auth"])
-
-# ── Helper: RFC 7807 exception factory ───────────────────────────
-
-def _problem(
-    status_code: int,
-    title: str,
-    detail: str,
-    instance: str = "about:blank",
-    type_uri: str = "about:blank",
-) -> HTTPException:
-    return HTTPException(
-        status_code=status_code,
-        detail={
-            "type": type_uri,
-            "title": title,
-            "status": status_code,
-            "detail": detail,
-            "instance": instance,
-        },
-    )
 
 
 # ── POST /auth/register ───────────────────────────────────────────
@@ -61,12 +42,15 @@ async def register(
     try:
         user = await auth_service.register_user(db, payload)
     except ValueError as exc:
-        raise _problem(
+        raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            title="Registration Conflict",
-            detail=str(exc),
-            instance=str(request.url),
-            type_uri="https://documind.local/problems/registration-conflict",
+            detail={
+                "type": "https://documind.io/errors/409",
+                "title": "Registration Conflict",
+                "status": 409,
+                "detail": str(exc),
+                "instance": str(request.url),
+            }
         )
     return UserResponse.model_validate(user)
 
@@ -85,12 +69,15 @@ async def login(
 ) -> TokenResponse:
     user = await auth_service.authenticate_user(db, payload.email, payload.password)
     if user is None:
-        raise _problem(
+        raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            title="Authentication Failed",
-            detail="Invalid email or password.",
-            instance=str(request.url),
-            type_uri="https://documind.local/problems/invalid-credentials",
+            detail={
+                "type": "https://documind.io/errors/401",
+                "title": "Authentication Failed",
+                "status": 401,
+                "detail": "Invalid email or password.",
+                "instance": str(request.url),
+            }
         )
     return await auth_service.issue_token_pair(db, user)
 
@@ -110,12 +97,15 @@ async def refresh(
     try:
         return await auth_service.rotate_refresh_token(db, payload.refresh_token)
     except ValueError as exc:
-        raise _problem(
+        raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            title="Token Refresh Failed",
-            detail=str(exc),
-            instance=str(request.url),
-            type_uri="https://documind.local/problems/invalid-refresh-token",
+            detail={
+                "type": "https://documind.io/errors/401",
+                "title": "Token Refresh Failed",
+                "status": 401,
+                "detail": str(exc),
+                "instance": str(request.url),
+            }
         )
 
 

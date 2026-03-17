@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, UploadFile, File, Query, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_db, get_current_user
+from app.dependencies import get_db, get_current_user, get_document_service
 from app.models.user import User
 from app.models.document import DocumentStatus
 from app.services.document_service import DocumentService
@@ -18,7 +18,6 @@ from app.schemas.common import PaginatedResponse, ErrorResponse
 from app.main import limiter
 
 router = APIRouter()
-doc_service = DocumentService()
 
 
 # ── POST /upload ──────────────────────────────────────────────
@@ -40,6 +39,7 @@ async def upload_document(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    doc_service: DocumentService = Depends(get_document_service),
 ):
     """
     Upload a document for processing.
@@ -60,6 +60,7 @@ async def list_documents(
     status: DocumentStatus | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    doc_service: DocumentService = Depends(get_document_service),
 ):
     """
     List all documents owned by the current user.
@@ -90,6 +91,7 @@ async def get_document(
     id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    doc_service: DocumentService = Depends(get_document_service),
 ):
     """
     Get detailed metadata for a specific document.
@@ -108,6 +110,7 @@ async def get_document_status(
     id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    doc_service: DocumentService = Depends(get_document_service),
 ):
     """
     Enhanced endpoint for polling document processing status.
@@ -132,6 +135,7 @@ async def get_document_chunks(
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    doc_service: DocumentService = Depends(get_document_service),
 ):
     """
     Get paginated chunks for a specific document.
@@ -158,6 +162,7 @@ async def delete_document(
     id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    doc_service: DocumentService = Depends(get_document_service),
 ):
     """
     Delete a document and its associated file.

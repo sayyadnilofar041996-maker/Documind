@@ -42,8 +42,7 @@ def embed_chunks(document_id: str):
                     chunks=len(chunks),
                     latency_ms=round(elapsed * 1000))
         
-        # Record metric
-        embedding_latency_seconds.observe(elapsed)
+        # Metrics are recorded inside embed_texts()
 
         # 4 & 5. Zip and Bulk Update
         # bulk_update_mappings needs a list of dicts with primary keys

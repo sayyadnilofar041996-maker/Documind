@@ -1,9 +1,8 @@
-"""
-DocuMind - pipeline/parsers/pdf_parser.py
-Purpose : PDF document parser using PyMuPDF (fitz).
-"""
 import fitz  # PyMuPDF
+import structlog
 from app.pipeline.parsers import ParsedChunk
+
+logger = structlog.get_logger()
 
 
 def parse_pdf(file_path: str) -> list[ParsedChunk]:
@@ -16,11 +15,16 @@ def parse_pdf(file_path: str) -> list[ParsedChunk]:
     Returns:
         list[ParsedChunk]: List of extracted chunks, one per non-blank page.
     """
+    logger.info("parser.pdf_started", path=file_path)
     chunks = []
     chunk_index = 0
     
     # Open the PDF document
-    doc = fitz.open(file_path)
+    try:
+        doc = fitz.open(file_path)
+    except Exception as e:
+        logger.error("parser.pdf_open_failed", path=file_path, error=str(e))
+        raise
     
     try:
         for page_num, page in enumerate(doc, start=1):
@@ -40,6 +44,10 @@ def parse_pdf(file_path: str) -> list[ParsedChunk]:
             chunks.append(chunk)
             chunk_index += 1
             
+        logger.info("parser.pdf_finished", path=file_path, chunks=len(chunks), pages=len(doc))
+    except Exception as e:
+        logger.error("parser.pdf_failed", path=file_path, error=str(e))
+        raise
     finally:
         # Ensure the document is closed
         doc.close()
