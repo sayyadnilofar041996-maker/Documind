@@ -56,7 +56,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     Shutdown: clean up resources.
     """
     # ── Startup ──────────────────────────────────────────
-    configure_logging()
+    from app.core.logging import setup_logging
+    setup_logging()
     logger.info("documind.starting", version=settings.app_version)
 
     # Initialize database + create tables

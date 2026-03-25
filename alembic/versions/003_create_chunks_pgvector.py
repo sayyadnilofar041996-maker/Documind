@@ -19,7 +19,7 @@ def upgrade():
         sa.Column('document_id', sa.UUID(), nullable=False),
         sa.Column('user_id', sa.UUID(), nullable=False),
         sa.Column('text', sa.Text(), nullable=False),
-        sa.Column('embedding', Vector(384), nullable=False),
+        sa.Column('embedding', Vector(384), nullable=True),
         sa.Column('page_number', sa.Integer(), nullable=True),
         sa.Column('chunk_index', sa.Integer(), nullable=False),
         sa.Column('token_count', sa.Integer(), nullable=False),

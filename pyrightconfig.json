@@ -1,0 +1,19 @@
+{
+    "venvPath": ".",
+    "venv": ".venv",
+    "include": [
+        "app",
+        "tests",
+        "worker",
+        "mcp_server",
+        "alembic"
+    ],
+    "exclude": [
+        "**/__pycache__",
+        "**/node_modules"
+    ],
+    "reportMissingImports": true,
+    "reportMissingTypeStubs": false,
+    "pythonVersion": "3.12",
+    "pythonPlatform": "Windows"
+}

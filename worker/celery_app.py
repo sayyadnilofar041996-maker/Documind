@@ -13,7 +13,7 @@ app = Celery(
     "documind",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["worker.tasks"]  # Ensure tasks are discovered
+    include=["worker.tasks.ingest_task", "worker.tasks.embed_task", "worker.tasks.cleanup_task"]
 )
 
 from celery.schedules import crontab

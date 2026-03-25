@@ -19,6 +19,25 @@ logger = structlog.get_logger()
 
 from app.rag.prompts import RAG_SYSTEM_PROMPT
 
+def format_context(chunks: list) -> str:
+    """Format retrieved chunks into context string."""
+    if not chunks:
+        return "No relevant context found."
+    parts = []
+    for i, (chunk, document, score) in enumerate(chunks):
+        parts.append(f"[Source {i+1}: {document.original_filename}, Page {chunk.page_number}]\n{chunk.text}")
+    return "\n\n".join(parts)
+
+def format_history(history: list) -> str:
+    """Format conversation history into string."""
+    if not history:
+        return "No previous conversation."
+    parts = []
+    for msg in history:
+        role = "User" if msg.role == "user" else "Assistant"
+        parts.append(f"{role}: {msg.content}")
+    return "\n".join(parts)
+
 # ── RAG Chain ─────────────────────────────────────────────────
 async def run_rag_chain(
     question: str,
