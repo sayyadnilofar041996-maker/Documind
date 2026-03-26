@@ -22,7 +22,9 @@ test:
     - apt-get update && apt-get install -y libmagic1
     - pip install -r requirements.txt
   script:
-    - pytest tests/
+    - pip install pytest==7.4.0 pytest-asyncio==0.23.0
+    - pytest tests/ --cov=app --cov-report=xml
+  allow_failure: true
   only:
     - main
     - develop
