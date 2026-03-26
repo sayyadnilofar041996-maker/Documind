@@ -4,9 +4,19 @@
 test:
   stage: test
   image: python:3.11-slim
+
   services:
-    - postgres:15-alpine
-    - redis:7-alpine
+    - name: postgres:15-alpine
+      alias: postgres
+    - name: redis:7-alpine
+      alias: redis
+
+  variables:
+    POSTGRES_DB: documind_test
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: password
+    DATABASE_URL: postgresql+psycopg2://postgres:password@postgres:5432/documind_test
+    REDIS_URL: redis://redis:6379/0
 
   before_script:
     - apt-get update && apt-get install -y libmagic1
@@ -17,7 +27,3 @@ test:
     - pytest tests/ --cov=app --cov-report=xml || true
 
   allow_failure: true
-
-  only:
-    - main
-    - develop
