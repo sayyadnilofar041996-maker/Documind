@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Git
+.git
+.gitignore
+
+# Env
+.env
+
+# Uploads
+uploads/
+
+# Tests & debug
+tests/
+test_*.txt
+tests_*.txt
+debug_*.py
+
+# Local venv
+.venv/
+
+# OS
+.DS_Store
