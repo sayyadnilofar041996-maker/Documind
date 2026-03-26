@@ -56,8 +56,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     Shutdown: clean up resources.
     """
     # ── Startup ──────────────────────────────────────────
-    from app.core.logging import setup_logging
-    setup_logging()
+    configure_logging()
     logger.info("documind.starting", version=settings.app_version)
 
     # Initialize database + create tables
@@ -169,7 +168,6 @@ def create_app() -> FastAPI:
             ).observe(duration)
 
     # ── Exception Handlers (RFC 7807) ──────────────────────
-    app.state.limiter = limiter
     # Register rate limit exceeded handler
     app.add_exception_handler(RateLimitExceeded,
         rate_limit_exceeded_handler)
