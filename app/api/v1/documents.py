@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, UploadFile, File, Query, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.dependencies import get_db, get_current_user, get_document_service
 from app.models.user import User
 from app.models.document import DocumentStatus
@@ -17,6 +18,7 @@ from app.schemas.document import DocumentRead, DocumentStatusRead, DocumentStatu
 from app.schemas.common import PaginatedResponse, ErrorResponse
 from app.main import limiter
 
+settings = get_settings()
 router = APIRouter()
 
 
@@ -33,7 +35,7 @@ router = APIRouter()
         429: {"model": ErrorResponse},
     }
 )
-@limiter.limit("50/minute")
+@limiter.limit(f"{settings.rate_limit_requests}/{settings.rate_limit_window_seconds} seconds")
 async def upload_document(
     request: Request,
     file: UploadFile = File(...),
