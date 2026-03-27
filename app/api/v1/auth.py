@@ -23,7 +23,7 @@ from app.schemas.auth import (
 )
 from app.services import auth_service
 
-router = APIRouter(tags=["auth"])
+router = APIRouter()
 
 
 # ── POST /auth/register ───────────────────────────────────────────
