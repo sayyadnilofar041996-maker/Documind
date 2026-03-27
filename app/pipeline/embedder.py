@@ -1,12 +1,12 @@
 """
 DocuMind - pipeline/embedder.py
-Purpose : SentenceTransformer embedding (CPU only)
+Purpose : fastembed embedding (CPU only)
 Phase   : 3 — Embeddings & Vector Search
 """
 
 import time
 from functools import lru_cache
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 from app.config import get_settings
 from app.core import metrics
 import structlog
@@ -17,9 +17,9 @@ logger = structlog.get_logger()
 
 # ── Model Loading ─────────────────────────────────────────────
 @lru_cache(maxsize=1)
-def get_embedder() -> SentenceTransformer:
+def get_embedder() -> TextEmbedding:
     """
-    Load and cache the SentenceTransformer embedding model.
+    Load and cache the fastembed embedding model.
     """
     logger.info(
         "embedder.loading",
@@ -27,12 +27,10 @@ def get_embedder() -> SentenceTransformer:
         cache_dir=settings.embedding_cache_dir,
     )
 
-    # Initializing SentenceTransformer
-    # device='cpu' is forced to ensure stability in container/local environments
-    model = SentenceTransformer(
-        model_name_or_path=settings.embedding_model,
-        cache_folder=settings.embedding_cache_dir,
-        device=settings.embedding_device
+    # fastembed supports 'sentence-transformers/all-MiniLM-L6-v2' natively
+    model = TextEmbedding(
+        model_name=settings.embedding_model,
+        cache_dir=settings.embedding_cache_dir
     )
 
     logger.info(
@@ -46,7 +44,7 @@ def get_embedder() -> SentenceTransformer:
 # ── Batch Embedding ───────────────────────────────────────────
 def embed_texts(texts: list[str]) -> list[list[float]]:
     """
-    Embed a list of texts in batches using SentenceTransformer.
+    Embed a list of texts in batches using fastembed.
     Returns: list of 384-dimensional float vectors (Python lists)
     """
     if not texts:
@@ -55,13 +53,11 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
     start_time = time.perf_counter()
     model = get_embedder()
     
-    # encode returns numpy arrays by default
-    embeddings = model.encode(
+    # fastembed.embed returns a generator of numpy arrays
+    embeddings = list(model.embed(
         texts, 
-        batch_size=settings.embedding_batch_size,
-        show_progress_bar=False,
-        convert_to_numpy=True
-    )
+        batch_size=settings.embedding_batch_size
+    ))
     
     duration = time.perf_counter() - start_time
     metrics.embedding_latency_seconds.observe(duration)
@@ -78,16 +74,12 @@ def embed_single(text: str) -> list[float]:
     start_time = time.perf_counter()
     model = get_embedder()
     
-    embedding = model.encode(
-        text, 
-        show_progress_bar=False,
-        convert_to_numpy=True
-    )
+    embeddings = list(model.embed([text]))
     
     duration = time.perf_counter() - start_time
     metrics.embedding_latency_seconds.observe(duration)
     
-    return embedding.tolist()
+    return embeddings[0].tolist()
 
 
 # ── Dimension Check ───────────────────────────────────────────
