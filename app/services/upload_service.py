@@ -27,6 +27,17 @@ MIME_TO_TYPE = {
     "text/markdown": FileType.MARKDOWN,
     "application/javascript": FileType.JAVASCRIPT,
     "text/x-python": FileType.PYTHON,
+    "text/x-script.python": FileType.PYTHON,
+    "text/javascript": FileType.JAVASCRIPT,
+    "application/x-javascript": FileType.JAVASCRIPT,
+    "text/x-javascript": FileType.JAVASCRIPT,
+    "application/x-typescript": FileType.TYPESCRIPT,
+    "text/typescript": FileType.TYPESCRIPT,
+    "text/x-c": FileType.C,
+    "text/x-c++src": FileType.CPP,
+    "text/x-java-source": FileType.JAVA,
+    "text/css": FileType.CSS,
+    "text/html": FileType.HTML,
 }
 
 class UploadService:
@@ -47,7 +58,7 @@ class UploadService:
         mime = magic.from_buffer(header, mime=True)
         if mime not in SUPPORTED_MIME_TYPES:
             # Fallback for text files that magic might label simply
-            if mime == "text/plain" and ext in [".py", ".js", ".md", ".ts"]:
+            if mime.startswith("text/") and ext in [".py", ".js", ".ts", ".jsx", ".tsx", ".md", ".css", ".html", ".java", ".c", ".cpp", ".h", ".hpp", ".rb", ".go", ".rs", ".php", ".swift", ".kt"]:
                 pass
             else:
                 raise UnsupportedFileTypeError(f"Unsupported file type: {mime}")

@@ -50,7 +50,7 @@ class Settings(BaseModel):
     # File Upload
     upload_dir: str = "/app/uploads"
     max_file_size_mb: int = 50
-    allowed_extensions: list[str] = Field(default=["pdf", "docx", "py", "js", "ts", "md"])
+    allowed_extensions: list[str] = Field(default=["pdf", "docx", "py", "js", "jsx", "ts", "tsx", "md", "txt", "css", "html", "java", "c", "cpp", "h", "hpp", "rb", "go", "rs", "php", "swift", "kt"])
 
     # RAG Pipeline
     chunk_size: int = 512
@@ -58,6 +58,9 @@ class Settings(BaseModel):
     chunk_separators: list[str] = Field(default=["\n\n", "\n", ". ", " ", ""])
     top_k_chunks: int = 5
     similarity_threshold: float = 0.4
+    rerank_model: str = "BAAI/bge-reranker-base"
+    rerank_top_k: int = 20
+    use_reranker: bool = True
     conversation_history_pairs: int = 6
     docx_page_word_limit: int = 500
 

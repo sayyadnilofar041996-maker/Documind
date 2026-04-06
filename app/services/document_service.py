@@ -52,7 +52,7 @@ class DocumentService:
         )
         existing = await db.execute(stmt)
         if existing.scalar_one_or_none():
-            raise DocumentError("You have already uploaded this document.")
+            raise DocumentError("Duplicate detected: This file has already been uploaded to your library.")
 
         # 3. Secure Naming & Storage
         stored_filename = await upload_service.get_secure_filename(file.filename, ext)

@@ -9,7 +9,21 @@ SUPPORTED_MIME_TYPES = [
     "text/plain",
     "text/markdown",
     "application/javascript",
-    "text/x-python"
+    "text/javascript",
+    "application/x-javascript",
+    "text/x-javascript",
+    "text/x-python",
+    "text/css",
+    "text/html",
+    "text/x-c",
+    "text/x-c++src",
+    "text/x-java-source",
+    "text/x-script.python",
+    "application/json",
+    "application/x-sh",
+    "text/x-sh",
+    "application/x-typescript",
+    "text/typescript"
 ]
 
 MAX_SYMBOLS_FILENAME = 255

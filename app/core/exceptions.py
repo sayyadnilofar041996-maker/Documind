@@ -96,6 +96,26 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
         detail=f"Too many requests. Limit: {exc.detail}"
     )
 
+async def documind_exception_handler(request: Request, exc: DocuMindError):
+    """Handle custom application exceptions."""
+    status_code = status.HTTP_400_BAD_REQUEST
+    title = "Application Error"
+    
+    if isinstance(exc, DocumentError) and "already uploaded" in str(exc).lower():
+        status_code = status.HTTP_409_CONFLICT
+        title = "Duplicate Document"
+    elif isinstance(exc, (AuthenticationError, AuthorizationError)):
+        status_code = status.HTTP_401_UNAUTHORIZED
+        title = "Authentication Error"
+        
+    logger.warning("documind.error", error=str(exc), status_code=status_code)
+    return rfc7807_response(
+        request=request,
+        status_code=status_code,
+        title=title,
+        detail=str(exc)
+    )
+
 async def unhandled_exception_handler(request: Request, exc: Exception):
     """Global fallback for unexpected errors."""
     logger.exception("unhandled_error", error=str(exc), path=str(request.url))

@@ -18,6 +18,7 @@ class AskRequest(BaseModel):
     question: str = Field(..., description="The user's question about the document(s)")
     document_id: uuid.UUID | None = Field(None, description="Optional document ID to restrict search to")
     session_id: uuid.UUID | None = Field(None, description="Optional session ID for chat history context")
+    model: str | None = Field("llama3-8b-8192", description="Groq model ID to use")
 
 
 class SourceChunk(BaseModel):
@@ -25,6 +26,7 @@ class SourceChunk(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     chunk_id: uuid.UUID
+    document_id: uuid.UUID
     document_name: str
     page_number: int | None
     text: str

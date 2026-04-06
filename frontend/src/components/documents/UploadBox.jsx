@@ -14,17 +14,26 @@ const UploadBox = () => {
     const allowedTypes = [
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
+      'text/plain',
+      'text/x-python',
+      'text/javascript',
+      'text/typescript',
+      'text/markdown',
+      'text/css',
+      'text/html',
+      'text/x-java-source',
+      'text/x-c',
+      'text/x-c++src',
     ]
-    const maxSize = 10 * 1024 * 1024 // 10MB
+    const maxSize = 20 * 1024 * 1024 // 20MB
 
-    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|docx|txt)$/i)) {
-      toast.error('Invalid file type. Please upload PDF, DOCX, or TXT.')
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|docx|txt|py|js|jsx|ts|tsx|md|css|html|java|c|cpp|h|hpp|rb|go|rs|php|swift|kt)$/i)) {
+      toast.error('Invalid file type. Supported: PDF, DOCX, TXT & code files.')
       return false
     }
 
     if (file.size > maxSize) {
-      toast.error('File size exceeds 10MB limit.')
+      toast.error('File size exceeds 20MB limit.')
       return false
     }
 
@@ -79,13 +88,13 @@ const UploadBox = () => {
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="w-full bg-card/50 border border-white/5 rounded-3xl p-6 shadow-2xl glass"
+      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl transition-all duration-300"
     >
       <div
-        className={`relative border-2 border-dashed rounded-2xl p-8 transition-all duration-300 flex flex-col items-center justify-center text-center space-y-4 ${ 
+        className={`relative border-2 border-dashed rounded-2xl p-8 transition-all duration-300 flex flex-col items-center justify-center text-center space-y-4 cursor-pointer ${ 
           dragActive
-            ? 'border-primary bg-primary/5 scale-[1.02]'
-            : 'border-white/10 hover:border-white/20'
+            ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10 scale-[1.02]'
+            : 'border-slate-200 dark:border-slate-800 hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-slate-800/20'
         }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -97,7 +106,7 @@ const UploadBox = () => {
           type="file"
           className="hidden"
           onChange={handleChange}
-          accept=".pdf,.docx,.txt"
+          accept=".pdf,.docx,.txt,.py,.js,.jsx,.ts,.tsx,.md,.css,.html,.java,.c,.cpp,.h,.hpp,.rb,.go,.rs,.php,.swift,.kt"
         />
 
         <AnimatePresence mode="wait">
@@ -109,20 +118,20 @@ const UploadBox = () => {
               exit={{ opacity: 0, y: -10 }}
               className="flex flex-col items-center space-y-4"
             >
-              <div className="p-5 bg-primary/10 rounded-2xl animate-float">       
-                <Upload className="w-10 h-10 text-primary" />
+              <div className={`p-5 rounded-2xl transition-all duration-300 ${dragActive ? 'bg-primary/20 scale-110' : 'bg-primary/10'}`}>
+                <Upload className={`w-10 h-10 text-primary transition-transform ${dragActive ? 'scale-125' : ''}`} />
               </div>
               <div className="space-y-1">
-                <p className="text-xl font-bold text-white">
-                  Drag & drop your file here
+                <p className="text-xl font-bold text-slate-900 dark:text-white">
+                  {dragActive ? '🎯 Drop your file here!' : 'Drag & drop your file here'}
                 </p>
-                <p className="text-sm text-gray-400">
-                  Support for PDF, DOCX, TXT (Max 10MB)
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                  PDF, DOCX, TXT & Code files (.py, .js, .ts, .md, etc.) · Max 20MB
                 </p>
               </div>
               <button
                 onClick={onButtonClick}
-                className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-all font-semibold active:scale-95"
+                className="px-8 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white rounded-xl border border-slate-200 dark:border-slate-800 transition-all font-semibold active:scale-95 shadow-sm"
               >
                 Browse Files
               </button>
@@ -135,14 +144,14 @@ const UploadBox = () => {
               exit={{ opacity: 0, scale: 0.9 }}
               className="w-full space-y-6"
             >
-              <div className="flex items-center justify-between bg-background/50 p-5 rounded-2xl border border-white/5 shadow-inner">
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner overflow-hidden">
                 <div className="flex items-center space-x-4 overflow-hidden">      
                   <div className="p-3 bg-primary/10 rounded-xl">
                     <File className="w-6 h-6 text-primary flex-shrink-0" />
                   </div>
                   <div className="text-left overflow-hidden">
-                    <p className="text-base font-semibold text-white truncate">{selectedFile.name}</p>
-                    <p className="text-xs text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="text-base font-bold text-slate-900 dark:text-white truncate">{selectedFile.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 </div>
                 <button
@@ -154,7 +163,7 @@ const UploadBox = () => {
                 </button>
               </div>
 
-              <div className="flex items-center space-x-3 text-xs text-gray-500 bg-white/5 p-3 rounded-lg">
+              <div className="flex items-center space-x-3 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
                 <Info className="w-4 h-4 text-primary" />
                 <span>By uploading, you agree to our processing terms.</span>
               </div>
@@ -174,7 +183,7 @@ const UploadBox = () => {
                 <button
                   onClick={() => setSelectedFile(null)}
                   disabled={uploading}
-                  className="px-6 py-3.5 bg-background border border-white/5 rounded-2xl text-white font-semibold hover:bg-white/5 transition-all"
+                  className="px-6 py-3.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-white font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
                 >
                   Cancel
                 </button>

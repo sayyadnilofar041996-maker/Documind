@@ -5,8 +5,10 @@ Phase   : 2 — File Upload
 """
 
 import uuid
+from pathlib import Path
 from typing import Annotated
-from fastapi import APIRouter, Depends, UploadFile, File, Query, status, Request
+from fastapi import APIRouter, Depends, UploadFile, File, Query, status, Request, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -172,3 +174,36 @@ async def delete_document(
     """
     await doc_service.delete_document(db, id, current_user.id)
     return None
+
+
+# ── GET /{id}/file ────────────────────────────────────────────
+@router.get(
+    "/{id}/file",
+    responses={
+        404: {"model": ErrorResponse},
+        403: {"model": ErrorResponse}
+    }
+)
+async def get_document_file(
+    id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    doc_service: DocumentService = Depends(get_document_service),
+):
+    """
+    Download or view the actual uploaded file.
+    """
+    doc = await doc_service.get_document(db, id, current_user.id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    file_path = Path(settings.upload_dir) / doc.stored_filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found on disk")
+        
+    # Return as inline for viewing in browser if possible
+    return FileResponse(
+        path=file_path,
+        filename=doc.original_filename,
+        content_disposition_type="inline"
+    )

@@ -80,7 +80,7 @@ def ingest_task(self, document_id: str):
                 token_count=token_count,
                 embedding=None
             )
-            db_chunk.id = str(uuid.uuid4()) # Ensure IDs are set if not handled by DB default for bulk
+            db_chunk.id = uuid.uuid4() # Ensure IDs are set as UUID objects for SQLAlchemy 2.0 matching
             db_chunks.append(db_chunk)
 
         session.add_all(db_chunks)

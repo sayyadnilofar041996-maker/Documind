@@ -1,30 +1,38 @@
 import { create } from 'zustand'
 
+const applyTheme = (dark) => {
+  if (dark) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}
+
 const useUIStore = create((set) => ({
   sidebarCollapsed: false,
-  darkMode: localStorage.getItem('theme') !== 'light',
+  darkMode: false, // Will be initialized by initDarkMode
 
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   
   toggleDarkMode: () => set((state) => {
     const newDarkMode = !state.darkMode
     localStorage.setItem('theme', newDarkMode ? 'dark' : 'light')
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+    applyTheme(newDarkMode)
     return { darkMode: newDarkMode }
   }),
 
   initDarkMode: () => {
-    const darkMode = localStorage.getItem('theme') !== 'light'
-    if (darkMode) {
-      document.documentElement.classList.add('dark')
+    const storedTheme = localStorage.getItem('theme')
+    let isDark = false
+    
+    if (storedTheme) {
+      isDark = storedTheme === 'dark'
     } else {
-      document.documentElement.classList.remove('dark')
+      isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
     }
-    set({ darkMode })
+    
+    applyTheme(isDark)
+    set({ darkMode: isDark })
   }
 }))
 

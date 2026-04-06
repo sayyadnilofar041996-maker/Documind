@@ -172,6 +172,9 @@ def create_app() -> FastAPI:
         rate_limit_exceeded_handler)
 
     # Replace existing exception handlers with imported ones
+    from app.core.exceptions import DocuMindError, documind_exception_handler
+    app.add_exception_handler(DocuMindError, documind_exception_handler)
+    
     app.add_exception_handler(StarletteHTTPException,
         http_exception_handler)
     app.add_exception_handler(RequestValidationError,

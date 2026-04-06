@@ -73,6 +73,7 @@ class QueryService:
         # 3. Embedding & Retrieval
         query_vec = embed_single(payload.question)
         retrieved = await retrieve_chunks(
+            query=payload.question,  # NEW: pass raw string for FTS
             query_embedding=query_vec,
             db=db,
             user_id=user.id,
@@ -92,7 +93,8 @@ class QueryService:
             result = await run_rag_chain(
                 question=payload.question,
                 chunks=retrieved,
-                history=history_messages
+                history=history_messages,
+                model=payload.model
             )
             answer = result["answer"]
             prompt_tokens = result["prompt_tokens"]

@@ -5,7 +5,7 @@ const documentApi = {
     const formData = new FormData()
     formData.append('file', file)
     
-    return client.post('/documents/', formData, {
+    return client.post('/documents/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

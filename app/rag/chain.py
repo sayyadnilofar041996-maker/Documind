@@ -25,7 +25,7 @@ def format_context(chunks: list) -> str:
         return "No relevant context found."
     parts = []
     for i, (chunk, document, score) in enumerate(chunks):
-        parts.append(f"[Source {i+1}: {document.original_filename}, Page {chunk.page_number}]\n{chunk.text}")
+        parts.append(f"[Source {i+1}]\nDocument: {document.original_filename}\nPage: {chunk.page_number}\nContent: {chunk.text}")
     return "\n\n".join(parts)
 
 def format_history(history: list) -> str:
@@ -43,6 +43,7 @@ async def run_rag_chain(
     question: str,
     chunks: list[tuple[DocumentChunk, Document, float]],
     history: list[QueryMessage],
+    model: str | None = None,
 ) -> dict:
     """
     Run the full RAG chain — assemble prompt and call Groq.
@@ -71,7 +72,7 @@ async def run_rag_chain(
     ]
 
     # Step 5: Call Groq
-    answer_text, prompt_tokens, completion_tokens = generate_answer(messages)
+    answer_text, prompt_tokens, completion_tokens = generate_answer(messages, model=model)
 
     logger.info(
         "rag.chain_complete",

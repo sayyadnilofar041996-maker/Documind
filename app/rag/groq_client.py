@@ -37,13 +37,14 @@ client = Groq(api_key=settings.groq_api_key)
     retry=retry_if_exception_type(RateLimitError),
     reraise=True,
 )
-def generate_answer(messages: list[dict]) -> tuple[str, int, int]:
+def generate_answer(messages: list[dict], model: str | None = None) -> tuple[str, int, int]:
     """
     Call Groq API to generate an answer.
 
     Args:
       messages: list of {role, content} dicts
                 [system prompt + user question]
+      model: optional model override
 
     Returns:
       tuple of:
@@ -61,13 +62,14 @@ def generate_answer(messages: list[dict]) -> tuple[str, int, int]:
       groq_tokens_total    → total tokens used
     """
     start_time = time.time()
+    target_model = model or settings.groq_model
 
     try:
         response = client.chat.completions.create(
-            model=settings.groq_model,           # llama3-8b-8192
+            model=target_model,
             messages=messages,
-            max_tokens=settings.groq_max_tokens, # 1024
-            temperature=settings.groq_temperature, # 0.1
+            max_tokens=settings.groq_max_tokens,
+            temperature=settings.groq_temperature,
         )
 
         # Extract response content
@@ -83,7 +85,7 @@ def generate_answer(messages: list[dict]) -> tuple[str, int, int]:
 
         logger.info(
             "groq.answer_generated",
-            model=settings.groq_model,
+            model=target_model,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             latency_ms=round(elapsed * 1000),
@@ -96,7 +98,7 @@ def generate_answer(messages: list[dict]) -> tuple[str, int, int]:
         logger.warning(
             "groq.rate_limit_hit",
             error=str(e),
-            model=settings.groq_model,
+            model=target_model,
         )
         groq_requests_total.labels(status="rate_limit").inc()
         raise  # tenacity catches this and retries
@@ -110,7 +112,7 @@ def generate_answer(messages: list[dict]) -> tuple[str, int, int]:
         logger.error(
             "groq.error",
             error=str(e),
-            model=settings.groq_model,
+            model=target_model,
             latency_ms=round(elapsed * 1000),
         )
         raise  # reraise — caller handles this

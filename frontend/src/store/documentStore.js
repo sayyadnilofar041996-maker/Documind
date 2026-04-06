@@ -32,7 +32,7 @@ const useDocumentStore = create((set, get) => ({
       set({ error: null })
       return true
     } catch (error) {
-      const message = error.response?.data?.detail || 'Upload failed'
+      const message = error.response?.data?.detail || 'Document upload failed. Please try again.'
       set({ error: message })
       toast.error(message)
       return false
