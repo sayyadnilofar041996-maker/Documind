@@ -135,9 +135,12 @@ async def retrieve_chunks(
         # Note: rerank iterates through all provided documents
         rerank_results = list(reranker.rerank(query, passages))
         
-        # results are (score, index)
         # Sort indices by score descending
-        reranked_indices = sorted(range(len(rerank_results)), key=lambda i: rerank_results[i].score, reverse=True)
+        reranked_indices = sorted(
+            range(len(rerank_results)), 
+            key=lambda i: getattr(rerank_results[i], "score", rerank_results[i]), 
+            reverse=True
+        )
         
         # Re-order the chunk IDs according to reranker
         final_ids = [final_ids[i] for i in reranked_indices[:top_k]]
