@@ -9,6 +9,9 @@ from app.models.chunk import DocumentChunk
 from app.pipeline.parsers.pdf_parser import parse_pdf
 from app.pipeline.parsers.docx_parser import parse_docx
 from app.pipeline.parsers.code_parser import parse_code
+from app.pipeline.parsers.doc_parser import parse_doc
+from app.pipeline.parsers.excel_parser import parse_excel
+from app.pipeline.parsers.pptx_parser import parse_pptx
 from app.pipeline.chunker import chunk_pages
 from app.config import get_settings
 
@@ -42,11 +45,25 @@ def ingest_task(self, document_id: str):
             raise FileNotFoundError(f"File not found at {file_path}")
 
         # Detect file type and route to correct parser
+        code_text_types = [
+            FileType.PYTHON, FileType.JAVASCRIPT, FileType.TYPESCRIPT, 
+            FileType.MARKDOWN, FileType.TXT, FileType.CSS, FileType.HTML, 
+            FileType.JAVA, FileType.C, FileType.CPP, FileType.H, FileType.HPP, 
+            FileType.RUBY, FileType.GO, FileType.RUST, FileType.PHP, 
+            FileType.SWIFT, FileType.KOTLIN
+        ]
+        
         if document.file_type == FileType.PDF:
             parsed_results = parse_pdf(file_path)
         elif document.file_type == FileType.DOCX:
             parsed_results = parse_docx(file_path)
-        elif document.file_type in [FileType.PYTHON, FileType.JAVASCRIPT, FileType.TYPESCRIPT, FileType.MARKDOWN]:
+        elif document.file_type == FileType.DOC:
+            parsed_results = parse_doc(file_path)
+        elif document.file_type in [FileType.XLS, FileType.XLSX]:
+            parsed_results = parse_excel(file_path)
+        elif document.file_type in [FileType.PPT, FileType.PPTX]:
+            parsed_results = parse_pptx(file_path)
+        elif document.file_type in code_text_types:
             parsed_results = parse_code(file_path, document.file_type.value)
         else:
             raise ValueError(f"Unsupported file type: {document.file_type}")

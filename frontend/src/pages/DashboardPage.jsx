@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react'
+import { motion } from 'framer-motion'
 import useAuthStore from '../store/authStore'
 import useDocumentStore from '../store/documentStore'
 import useChatStore from '../store/chatStore'
 import StatsCard from '../components/dashboard/StatsCard'
 import RecentDocuments from '../components/dashboard/RecentDocuments'
-import RecentChats from '../components/dashboard/RecentChats'
-import QuickActions from '../components/dashboard/QuickActions'
-import { Files, CheckCircle, MessageSquare } from 'lucide-react'
+import RecentActivity from '../components/dashboard/RecentActivity'
+import { Files, MessageSquare, Zap } from 'lucide-react'
 
 const DashboardPage = () => {
   const { user } = useAuthStore()
@@ -22,51 +22,57 @@ const DashboardPage = () => {
   const processedDocs = documents.filter(d => d.status === 'ready').length
   const totalChats = sessions.length
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  }
+
   return (
-    <div className="space-y-6 pb-10">
-      {/* Welcome Header */}
-      <div className="animate-in fade-in slide-in-from-top-4 duration-700">
-        <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
-          Welcome back, <span className="bg-gradient-to-r from-primary via-blue-500 to-purple-500 bg-clip-text text-transparent">{user?.username || 'User'}</span> <span className="inline-block animate-bounce-short">👋</span>
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-3 text-lg font-medium">
-          Here's your intelligence overview for today
-        </p>
-      </div>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6 pb-6 max-w-[1400px] mx-auto pt-2 px-4 md:px-8"
+    >
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in zoom-in-95 duration-700 delay-100">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         <StatsCard 
-          title="Total Documents"
+          title="Document Repository"
           value={totalDocs}
           icon={Files}
-          trend={{ value: 12, isPositive: true }}
+          trend={{ value: 8.4, isPositive: true }}
+          color="#4fa3f7"
         />
         <StatsCard 
-          title="Processed"
+          title="Semantic Processing"
           value={processedDocs}
-          icon={CheckCircle}
+          icon={Zap}
+          trend={{ value: 12.1, isPositive: true }}
+          color="#7c5cfc"
         />
         <StatsCard 
-          title="Total Chats"
+          title="Intelligence Sessions"
           value={totalChats}
           icon={MessageSquare}
+          trend={{ value: 5.2, isPositive: false }}
+          color="#10b981"
         />
       </div>
 
-      {/* Main Activity Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+      {/* Workspace Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 min-h-[400px]">
         <RecentDocuments documents={documents} />
-        <RecentChats sessions={sessions} />
+        <RecentActivity sessions={sessions} />
       </div>
-
-      {/* Quick Actions */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
-        <QuickActions />
-      </div>
-    </div>
+    </motion.div>
   )
 }
 
 export default DashboardPage
+

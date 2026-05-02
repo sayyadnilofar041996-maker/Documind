@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, File, X, Loader2, Info } from 'lucide-react'
+import { Upload, File, X, Loader2, Info, Sparkles, AlertCircle } from 'lucide-react'
 import useDocumentStore from '../../store/documentStore'
 import toast from 'react-hot-toast'
 
@@ -13,7 +13,12 @@ const UploadBox = () => {
   const validateFile = (file) => {
     const allowedTypes = [
       'application/pdf',
+      'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'text/plain',
       'text/x-python',
       'text/javascript',
@@ -22,13 +27,17 @@ const UploadBox = () => {
       'text/css',
       'text/html',
       'text/x-java-source',
+      'text/x-java',
       'text/x-c',
+      'text/x-chdr',
       'text/x-c++src',
+      'text/x-c++hdr',
     ]
     const maxSize = 20 * 1024 * 1024 // 20MB
+    const codeExtPattern = /\.(pdf|doc|docx|ppt|pptx|xls|xlsx|txt|py|js|jsx|ts|tsx|md|css|html|java|c|cpp|h|hpp|rb|go|rs|php|swift|kt|sh|json|sql)$/i
 
-    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|docx|txt|py|js|jsx|ts|tsx|md|css|html|java|c|cpp|h|hpp|rb|go|rs|php|swift|kt)$/i)) {
-      toast.error('Invalid file type. Supported: PDF, DOCX, TXT & code files.')
+    if (!allowedTypes.includes(file.type) && !file.name.match(codeExtPattern)) {
+      toast.error('Invalid file type. Project supports PDF, Office, and all major code files.')
       return false
     }
 
@@ -86,104 +95,103 @@ const UploadBox = () => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl transition-all duration-300"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full bg-[#0f1117] p-4 rounded-[10px] border border-[rgba(255,255,255,0.07)] shadow-sm"
     >
       <div
-        className={`relative border-2 border-dashed rounded-2xl p-8 transition-all duration-300 flex flex-col items-center justify-center text-center space-y-4 cursor-pointer ${ 
+        className={`relative border-2 border-dashed rounded-[10px] p-6 transition-all duration-300 flex flex-col items-center justify-center text-center space-y-4 cursor-pointer overflow-hidden ${ 
           dragActive
-            ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10 scale-[1.02]'
-            : 'border-slate-200 dark:border-slate-800 hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-slate-800/20'
+            ? 'border-indigo-500 bg-indigo-50 dark:bg-[#4fa3f7]/10 dark:border-[#4fa3f7] shadow-lg dark:shadow-[0_0_15px_rgba(79,163,247,0.1)]'
+            : 'border-zinc-200 dark:border-white/10 hover:border-indigo-400 dark:hover:border-[#4fa3f7]/50 hover:bg-zinc-50 dark:hover:bg-[#4fa3f7]/5'
         }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
+        onClick={!selectedFile ? onButtonClick : undefined}
       >
         <input
           ref={fileInputRef}
           type="file"
           className="hidden"
           onChange={handleChange}
-          accept=".pdf,.docx,.txt,.py,.js,.jsx,.ts,.tsx,.md,.css,.html,.java,.c,.cpp,.h,.hpp,.rb,.go,.rs,.php,.swift,.kt"
+          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.py,.js,.jsx,.ts,.tsx,.md,.css,.html,.java,.c,.cpp,.h,.hpp,.rb,.go,.rs,.php,.swift,.kt,.sh,.json,.sql"
         />
 
         <AnimatePresence mode="wait">
           {!selectedFile ? (
             <motion.div
               key="empty"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex flex-col items-center space-y-4"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex flex-col items-center space-y-6 relative z-10"
             >
-              <div className={`p-5 rounded-2xl transition-all duration-300 ${dragActive ? 'bg-primary/20 scale-110' : 'bg-primary/10'}`}>
-                <Upload className={`w-10 h-10 text-primary transition-transform ${dragActive ? 'scale-125' : ''}`} />
+              <div className={`p-4 rounded-lg bg-white dark:bg-[#0a0a0f] border border-zinc-200 dark:border-white/10 shadow-sm transition-all duration-300 ${dragActive ? 'scale-110 border-indigo-500 dark:border-[#4fa3f7]' : ''}`}>
+                <Upload className={`w-6 h-6 text-zinc-400 dark:text-zinc-600 transition-colors ${dragActive ? 'text-indigo-500 dark:text-[#4fa3f7]' : ''}`} />
               </div>
               <div className="space-y-1">
-                <p className="text-xl font-bold text-slate-900 dark:text-white">
-                  {dragActive ? '🎯 Drop your file here!' : 'Drag & drop your file here'}
-                </p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                  PDF, DOCX, TXT & Code files (.py, .js, .ts, .md, etc.) · Max 20MB
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-[#fff] tracking-tight">
+                  {dragActive ? 'Release to Upload' : 'Upload Documents'}
+                </h3>
+                <p className="text-[12px] text-zinc-500 dark:text-white/45 font-medium max-w-[450px] leading-relaxed">
+                  Support for <span className="text-indigo-600 dark:text-[#4fa3f7] font-semibold">PDF, Word, Excel, PPT, CSV,</span> and over 20+ <span className="text-indigo-600 dark:text-[#4fa3f7] font-semibold">Source Code</span> formats including PY, JS, TS, C++, and SQL.
                 </p>
               </div>
-              <button
-                onClick={onButtonClick}
-                className="px-8 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white rounded-xl border border-slate-200 dark:border-slate-800 transition-all font-semibold active:scale-95 shadow-sm"
-              >
-                Browse Files
-              </button>
             </motion.div>
           ) : (
             <motion.div
               key="selected"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="w-full space-y-6"
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full space-y-8 relative z-10"
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner overflow-hidden">
-                <div className="flex items-center space-x-4 overflow-hidden">      
-                  <div className="p-3 bg-primary/10 rounded-xl">
-                    <File className="w-6 h-6 text-primary flex-shrink-0" />
+              <div className="bg-zinc-50 dark:bg-[#0a0a0f] border border-zinc-200 dark:border-[rgba(255,255,255,0.07)] p-6 rounded-[10px] flex items-center justify-between shadow-sm">
+                <div className="flex items-center space-x-4 overflow-hidden text-left">      
+                  <div className="p-3 bg-white dark:bg-[#0f1117] rounded-lg border border-zinc-200 dark:border-white/10 shadow-sm">
+                    <File className="w-6 h-6 text-indigo-500 dark:text-[#4fa3f7]" />
                   </div>
-                  <div className="text-left overflow-hidden">
-                    <p className="text-base font-bold text-slate-900 dark:text-white truncate">{selectedFile.name}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-zinc-900 dark:text-[#fff] truncate">{selectedFile.name}</p>
+                    <p className="text-[11px] text-zinc-400 dark:text-white/45 font-medium uppercase tracking-wider">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • Binary Stream
+                    </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setSelectedFile(null)}
                   disabled={uploading}
-                  className="p-2 hover:bg-red-500/10 rounded-xl text-gray-400 hover:text-red-400 transition-colors"
+                  className="p-2 text-zinc-400 hover:text-red-500 transition-colors"
                 >
-                  <X className="w-6 h-6" />
+                  <X size={18} />
                 </button>
               </div>
 
-              <div className="flex items-center space-x-3 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800">
-                <Info className="w-4 h-4 text-primary" />
-                <span>By uploading, you agree to our processing terms.</span>
-              </div>
-
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                 <button
                   onClick={handleUpload}
                   disabled={uploading}
-                  className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-2xl shadow-xl shadow-primary/20 transition-all flex items-center justify-center disabled:opacity-50 active:scale-95"
+                  className="flex-1 btn-primary space-x-2"
                 >
                   {uploading ? (
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Vectorizing...</span>
+                    </>
                   ) : (
-                    'Confirm Upload'
+                    <>
+                      <Upload size={16} />
+                      <span>Process Document</span>
+                    </>
                   )}
                 </button>
                 <button
                   onClick={() => setSelectedFile(null)}
                   disabled={uploading}
-                  className="px-6 py-3.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-white font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
+                  className="btn-secondary"
                 >
                   Cancel
                 </button>
@@ -197,3 +205,4 @@ const UploadBox = () => {
 }
 
 export default UploadBox
+

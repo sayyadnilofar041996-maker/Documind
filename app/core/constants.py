@@ -5,7 +5,12 @@ Purpose : Shared application constants
 
 SUPPORTED_MIME_TYPES = [
     "application/pdf",
+    "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "text/plain",
     "text/markdown",
     "application/javascript",
@@ -16,7 +21,10 @@ SUPPORTED_MIME_TYPES = [
     "text/css",
     "text/html",
     "text/x-c",
+    "text/x-chdr",
     "text/x-c++src",
+    "text/x-c++hdr",
+    "text/x-java",
     "text/x-java-source",
     "text/x-script.python",
     "application/json",

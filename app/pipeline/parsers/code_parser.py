@@ -84,8 +84,11 @@ def parse_code(file_path: str, file_type: str) -> List[ParsedChunk]:
     
     if file_type == 'py':
         raw_chunks = _split_python(content)
-    elif file_type in ['js', 'ts']:
+    elif file_type in ['js', 'ts', 'jsx', 'tsx']:
         raw_chunks = _split_js_ts(content)
+    elif file_type in ['c', 'cpp', 'h', 'hpp', 'java', 'go', 'rs']:
+        # For now, use the robust blank-line splitting for these languages
+        raw_chunks = [c.strip() for c in re.split(r'\n\s*\n', content) if c.strip()]
     elif file_type == 'md':
         raw_chunks = _split_markdown(content)
     else:

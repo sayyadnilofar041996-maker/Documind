@@ -50,7 +50,7 @@ class Settings(BaseModel):
     # File Upload
     upload_dir: str = "/app/uploads"
     max_file_size_mb: int = 50
-    allowed_extensions: list[str] = Field(default=["pdf", "docx", "py", "js", "jsx", "ts", "tsx", "md", "txt", "css", "html", "java", "c", "cpp", "h", "hpp", "rb", "go", "rs", "php", "swift", "kt"])
+    allowed_extensions: list[str] = Field(default=["pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "py", "js", "jsx", "ts", "tsx", "md", "txt", "css", "html", "java", "c", "cpp", "h", "hpp", "rb", "go", "rs", "php", "swift", "kt"])
 
     # RAG Pipeline
     chunk_size: int = 512

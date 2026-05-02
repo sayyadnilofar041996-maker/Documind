@@ -43,13 +43,11 @@ async def run_rag_chain(
     question: str,
     chunks: list[tuple[DocumentChunk, Document, float]],
     history: list[QueryMessage],
+    metadata: str | None = None,
     model: str | None = None,
 ) -> dict:
     """
     Run the full RAG chain — assemble prompt and call Groq.
-    
-    Returns:
-        dict with: answer, prompt_tokens, completion_tokens
     """
     # Step 1: Format context from retrieved chunks
     context = format_context(chunks)
@@ -59,6 +57,7 @@ async def run_rag_chain(
 
     # Step 3: Fill system prompt template
     system_prompt = RAG_SYSTEM_PROMPT.format(
+        metadata=metadata or "No Repository Intelligence available for this session.",
         context=context,
         history=history_text,
         filename="{filename}",  # kept as placeholder for inline citations

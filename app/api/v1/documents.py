@@ -207,3 +207,23 @@ async def get_document_file(
         filename=doc.original_filename,
         content_disposition_type="inline"
     )
+
+@router.get(
+    "/{id}/content",
+    responses={
+        404: {"model": ErrorResponse},
+        403: {"model": ErrorResponse}
+    }
+)
+async def get_document_full_content(
+    id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    doc_service: DocumentService = Depends(get_document_service),
+):
+    """
+    Get the full extracted text content of a document (joined chunks).
+    Useful for previewing files that cannot be rendered natively (PPT, Excel).
+    """
+    content = await doc_service.get_document_full_content(db, id, current_user.id)
+    return {"content": content}

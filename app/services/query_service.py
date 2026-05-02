@@ -10,6 +10,8 @@ from fastapi import HTTPException, status
 import structlog
 
 from app.models.user import User
+from app.models.document import Document
+from app.models.chunk import DocumentChunk
 from app.models.session import QuerySession, QueryMessage, MessageRole
 from app.schemas.query import AskRequest, AskResponse, SourceChunk
 from app.pipeline.embedder import embed_single
@@ -25,6 +27,38 @@ settings = get_settings()
 logger = structlog.get_logger()
 
 class QueryService:
+    async def _get_repository_metadata(self, db: AsyncSession, user_id: uuid.UUID, document_ids: list[uuid.UUID] | None) -> str:
+        """Fetch global facts about the focused documents."""
+        if not document_ids:
+            return "Global Repository (All user documents accessible)."
+
+        stmt = (
+            select(
+                Document.original_filename,
+                Document.file_type,
+                Document.file_size_bytes,
+                func.max(DocumentChunk.page_number).label("total_pages")
+            )
+            .join(DocumentChunk, Document.id == DocumentChunk.document_id)
+            .where(Document.id.in_(document_ids))
+            .where(Document.user_id == user_id)
+            .group_by(Document.id)
+        )
+        
+        result = await db.execute(stmt)
+        docs = result.all()
+        
+        if not docs:
+            return "No focused documents found."
+            
+        lines = []
+        for doc in docs:
+            size_mb = round(doc.file_size_bytes / (1024 * 1024), 2)
+            pages = doc.total_pages or 1
+            lines.append(f"- {doc.original_filename} | Type: {doc.file_type} | Size: {size_mb}MB | Total Pages: {pages}")
+            
+        return "\n".join(lines)
+    
     async def ask_question(
         self, 
         db: AsyncSession, 
@@ -73,10 +107,11 @@ class QueryService:
         # 3. Embedding & Retrieval
         query_vec = embed_single(payload.question)
         retrieved = await retrieve_chunks(
-            query=payload.question,  # NEW: pass raw string for FTS
+            query=payload.question,
             query_embedding=query_vec,
             db=db,
             user_id=user.id,
+            document_ids=payload.document_ids,
             document_id=payload.document_id
         )
 
@@ -89,11 +124,16 @@ class QueryService:
             completion_tokens = 0
         else:
             # 5. RAG Chain Execution
+            # NEW: Get repository metadata for global context
+            effective_ids = payload.document_ids or ([payload.document_id] if payload.document_id else None)
+            metadata = await self._get_repository_metadata(db, user.id, effective_ids)
+            
             sources = format_sources(retrieved)
             result = await run_rag_chain(
                 question=payload.question,
                 chunks=retrieved,
                 history=history_messages,
+                metadata=metadata,
                 model=payload.model
             )
             answer = result["answer"]

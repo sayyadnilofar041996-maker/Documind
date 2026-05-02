@@ -22,8 +22,13 @@ logger = structlog.get_logger()
 # MIME to FileType mapping
 MIME_TO_TYPE = {
     "application/pdf": FileType.PDF,
+    "application/msword": FileType.DOC,
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": FileType.DOCX,
-    "text/plain": FileType.MARKDOWN,
+    "application/vnd.ms-powerpoint": FileType.PPT,
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": FileType.PPTX,
+    "application/vnd.ms-excel": FileType.XLS,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": FileType.XLSX,
+    "text/plain": FileType.TXT,
     "text/markdown": FileType.MARKDOWN,
     "application/javascript": FileType.JAVASCRIPT,
     "text/x-python": FileType.PYTHON,
@@ -34,7 +39,10 @@ MIME_TO_TYPE = {
     "application/x-typescript": FileType.TYPESCRIPT,
     "text/typescript": FileType.TYPESCRIPT,
     "text/x-c": FileType.C,
+    "text/x-chdr": FileType.C,
     "text/x-c++src": FileType.CPP,
+    "text/x-c++hdr": FileType.CPP,
+    "text/x-java": FileType.JAVA,
     "text/x-java-source": FileType.JAVA,
     "text/css": FileType.CSS,
     "text/html": FileType.HTML,
@@ -52,25 +60,27 @@ class UploadService:
         
         # 1. Read first chunk for magic bytes validation
         header = await file.read(2048)
-        file_size = len(header)
         
         # 2. Validate MIME type
         mime = magic.from_buffer(header, mime=True)
+        
+        # Fallback for text files that magic might label simply
+        # We allow any text-like file with a code extension
+        code_extensions = [
+            ".py", ".js", ".ts", ".jsx", ".tsx", ".md", ".css", ".html", 
+            ".java", ".c", ".cpp", ".h", ".hpp", ".rb", ".go", ".rs", 
+            ".php", ".swift", ".kt", ".sh", ".json", ".sql", ".txt"
+        ]
+        
         if mime not in SUPPORTED_MIME_TYPES:
-            # Fallback for text files that magic might label simply
-            if mime.startswith("text/") and ext in [".py", ".js", ".ts", ".jsx", ".tsx", ".md", ".css", ".html", ".java", ".c", ".cpp", ".h", ".hpp", ".rb", ".go", ".rs", ".php", ".swift", ".kt"]:
+            if (mime.startswith("text/") or mime == "application/octet-stream") and ext in code_extensions:
                 pass
             else:
                 raise UnsupportedFileTypeError(f"Unsupported file type: {mime}")
         
         # 3. Validate size
-        max_bytes = settings.max_file_size_mb * 1024 * 1024
-        # We need to continue reading to get full size if it's already big
-        # but realistically we'll check this during full read or using file.size if available
-        # In modern FastAPI, file.size is often populated.
-        
         await file.seek(0)
-        return MIME_TO_TYPE.get(mime, FileType.MARKDOWN), ext
+        return MIME_TO_TYPE.get(mime, FileType.TXT), ext
 
     @staticmethod
     async def get_secure_filename(original_filename: str, ext: str) -> str:

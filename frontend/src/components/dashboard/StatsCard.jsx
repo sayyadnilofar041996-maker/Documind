@@ -1,36 +1,47 @@
 import React from 'react'
+import { motion } from 'framer-motion'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 
-const StatsCard = ({ title, value, icon: Icon, trend, description }) => {
+const StatsCard = ({ title, value, icon: Icon, trend, color = "#4fa3f7" }) => {
   return (
-    <div className="group bg-white/60 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-3xl hover:border-transparent hover:shadow-[0_0_2rem_-0.5rem_#3b82f640] transition-all duration-500 shadow-xl backdrop-blur-xl flex flex-col justify-between h-full relative overflow-hidden flex-1 before:absolute before:inset-0 before:p-[1px] before:rounded-3xl before:bg-gradient-to-b before:from-primary/50 before:to-transparent before:-z-10 before:opacity-0 group-hover:before:opacity-100 before:transition-opacity">
-      {/* Premium Glow */}
-      <div className="absolute -right-12 -top-12 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 group-hover:scale-150 transition-all duration-700 pointer-events-none" />
-      
-      <div>
-        <div className="flex items-center justify-between mb-4 relative z-10">
-          <div className="p-3 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl group-hover:scale-110 shadow-inner border border-primary/10 transition-transform duration-500">
-            <Icon className="w-6 h-6 text-primary" />
-          </div>
-          {trend && (
-            <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-              trend.isPositive ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-            }`}>
-              {trend.isPositive ? '+' : ''}{trend.value}%
-            </span>
-          )}
-        </div>
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+      className="bg-zinc-50 dark:bg-[#0f1117] p-5 rounded-[10px] border border-zinc-200 dark:border-[rgba(255,255,255,0.07)] relative flex flex-col justify-between min-h-[130px] transition-all duration-300 shadow-sm overflow-hidden"
+    >
+      {/* Accent Border Strip */}
+      <div 
+        className="absolute left-0 top-0 bottom-0 w-[4px]" 
+        style={{ backgroundColor: color }}
+      />
+
+      <div className="flex justify-between items-start mb-2">
+        <span className="text-[10px] font-bold tracking-widest uppercase text-zinc-500 dark:text-white/45 pl-1">
+          {title}
+        </span>
         
-        <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">{title}</h3>
-        <div className="flex items-baseline space-x-2 mt-1">
-          <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{value}</span>
-        </div>
+        {trend && (
+          <div className={`flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+            trend.isPositive 
+              ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+              : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+          }`}>
+            {trend.isPositive ? <TrendingUp size={10} strokeWidth={3} /> : <TrendingDown size={10} strokeWidth={3} />}
+            <span>{trend.value}%</span>
+          </div>
+        )}
       </div>
       
-      {description && (
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 leading-relaxed">{description}</p>
-      )}
-    </div>
+      <div className="flex items-center space-x-3 pl-1">
+        <h3 className="text-4xl font-extrabold text-zinc-900 dark:text-[#fff] tabular-nums tracking-tight">
+          {value}
+        </h3>
+        <Icon className="w-6 h-6 opacity-80" style={{ color }} />
+      </div>
+    </motion.div>
   )
 }
 
 export default StatsCard
+

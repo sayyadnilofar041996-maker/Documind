@@ -13,7 +13,12 @@ from . import Base
 
 class FileType(str, enum.Enum):
     PDF = "pdf"
+    DOC = "doc"
     DOCX = "docx"
+    PPT = "ppt"
+    PPTX = "pptx"
+    XLS = "xls"
+    XLSX = "xlsx"
     TXT = "txt"
     PYTHON = "py"
     JAVASCRIPT = "js"

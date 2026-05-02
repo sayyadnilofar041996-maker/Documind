@@ -8,7 +8,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, Float, func
 from sqlalchemy.orm import joinedload
-from fastembed.rerank.cross_encoder import TextCrossEncoder as Reranker
+# from fastembed.rerank.cross_encoder import TextCrossEncoder as Reranker (moved to function to avoid crash)
 from functools import lru_cache
 import sqlalchemy as sa
 import structlog
@@ -23,12 +23,17 @@ logger = structlog.get_logger()
 
 
 @lru_cache(maxsize=1)
-def get_reranker() -> Reranker:
+def get_reranker():
     """Load and cache the fastembed reranker model."""
-    logger.info("reranker.loading", model=settings.rerank_model)
-    model = Reranker(model_name=settings.rerank_model, cache_dir=settings.embedding_cache_dir)
-    logger.info("reranker.loaded", model=settings.rerank_model)
-    return model
+    try:
+        from fastembed.rerank.cross_encoder import TextCrossEncoder as Reranker
+        logger.info("reranker.loading", model=settings.rerank_model)
+        model = Reranker(model_name=settings.rerank_model, cache_dir=settings.embedding_cache_dir)
+        logger.info("reranker.loaded", model=settings.rerank_model)
+        return model
+    except ImportError:
+        logger.error("reranker.import_failed", error="fastembed not installed")
+        return None
 
 
 async def retrieve_chunks(
@@ -36,7 +41,8 @@ async def retrieve_chunks(
     query_embedding: list[float],
     db: AsyncSession,
     user_id: UUID,
-    document_id: UUID | None = None,
+    document_ids: list[UUID] | None = None,
+    document_id: UUID | None = None,  # Keep for backward compat
     top_k: int | None = None,
     threshold: float | None = None,
 ) -> list[tuple[DocumentChunk, Document, float]]:
@@ -65,8 +71,11 @@ async def retrieve_chunks(
         .order_by(cosine_distance.asc())
         .limit(RRF_POOL_SIZE)
     )
-    if document_id:
-        vector_stmt = vector_stmt.where(DocumentChunk.document_id == document_id)
+    # Handle filtering logic
+    effective_ids = document_ids or ([document_id] if document_id else None)
+
+    if effective_ids:
+        vector_stmt = vector_stmt.where(DocumentChunk.document_id.in_(effective_ids))
     
     vector_results = (await db.execute(vector_stmt)).all()
 
@@ -83,8 +92,8 @@ async def retrieve_chunks(
         .order_by(sa.func.ts_rank(DocumentChunk.search_vector, sa.func.plainto_tsquery("english", query)).desc())
         .limit(RRF_POOL_SIZE)
     )
-    if document_id:
-        fts_stmt = fts_stmt.where(DocumentChunk.document_id == document_id)
+    if effective_ids:
+        fts_stmt = fts_stmt.where(DocumentChunk.document_id.in_(effective_ids))
     
     fts_results = (await db.execute(fts_stmt)).scalars().all()
 

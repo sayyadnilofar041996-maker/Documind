@@ -176,3 +176,11 @@ class DocumentService:
             "progress_pct": progress_pct,
             "updated_at": doc.updated_at
         }
+
+    async def get_document_full_content(self, db: AsyncSession, doc_id: uuid.UUID, user_id: uuid.UUID) -> str:
+        """Retrieves and concatenates all text chunks for a document as a single string."""
+        await self.get_document(db, doc_id, user_id)
+        stmt = select(DocumentChunk).where(DocumentChunk.document_id == doc_id).order_by(DocumentChunk.chunk_index)
+        result = await db.execute(stmt)
+        chunks = result.scalars().all()
+        return "\n\n".join([c.text for c in chunks])

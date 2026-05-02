@@ -1,31 +1,29 @@
-import React from 'react'
 import { FileText, HelpCircle, List, Table, Globe, BarChart } from 'lucide-react'
+import { motion } from 'framer-motion'
 import useChatStore from '../../store/chatStore'
 
 const ChatQuickActions = () => {
   const { setInputDraft } = useChatStore()
 
   const actions = [
-    { label: 'Summary', icon: FileText, prompt: 'Summarize my documents' },
-    { label: 'Question', icon: HelpCircle, prompt: 'Answer questions from my documents' },
-    { label: 'Outline', icon: List, prompt: 'Create an outline of the documents' },
-    { label: 'Table', icon: Table, prompt: 'Extract key data into a table format' },
-    { label: 'Language', icon: Globe, prompt: 'Translate the main points into [Language]' },
-    { label: 'Analysis', icon: BarChart, prompt: 'Analyze the key insights' }
+    { label: 'Summarize', icon: FileText, prompt: 'Synthesize a high-level executive summary of the document landscape.' },
+    { label: 'Query', icon: HelpCircle, prompt: 'Perform a targeted search for specific data points across indices.' },
+    { label: 'Outline', icon: List, prompt: 'Generate a structured structural hierarchy of the extracted intelligence.' },
+    { label: 'Tablify', icon: Table, prompt: 'Transform raw data into an optimized JSON/CSV tabular matrix.' },
+    { label: 'Language', icon: Globe, prompt: 'Relay the core intelligence into a specified linguistic format.' },
+    { label: 'Insight', icon: BarChart, prompt: 'Extract deep semantic insights and latent patterns from the corpus.' }
   ]
 
   return (
-    <div className="flex flex-row md:grid md:grid-cols-6 gap-2 md:gap-3 overflow-x-auto pb-2 scrollbar-none">
+    <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
       {actions.map((action, idx) => (
         <button
           key={idx}
           onClick={() => setInputDraft(action.prompt)}
-          className="flex-shrink-0 group flex flex-col items-center justify-center p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-slate-800 hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md min-w-[90px] md:min-w-0"
+          className="group flex items-center space-x-2 px-3 py-1.5 bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 rounded-lg transition-all duration-300 active:scale-95"
         >
-          <div className="mb-1.5 p-2 bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/20 rounded-lg group-hover:scale-110 transition-all duration-300">
-            <action.icon className="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors" />
-          </div>
-          <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+          <action.icon className="w-3.5 h-3.5 text-zinc-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+          <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
             {action.label}
           </span>
         </button>
@@ -33,5 +31,6 @@ const ChatQuickActions = () => {
     </div>
   )
 }
+
 
 export default ChatQuickActions

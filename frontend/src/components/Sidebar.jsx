@@ -21,30 +21,31 @@ const SidebarItem = ({ icon: Icon, label, path, collapsed }) => {
   return (
     <Link
       to={path}
-      className={`relative flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+      className={`relative flex items-center space-x-3 px-3 py-2.5 rounded-[10px] transition-all duration-300 group ${
         isActive 
-          ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-          : 'text-slate-500 hover:bg-primary/5 hover:text-primary dark:text-slate-400 dark:hover:text-primary'
+          ? 'bg-zinc-100 dark:bg-[#7c5cfc]/10 text-zinc-900 dark:text-[#7c5cfc]' 
+          : 'text-zinc-500 dark:text-white/45 hover:text-zinc-900 dark:hover:text-[#7c5cfc] hover:bg-zinc-50 dark:hover:bg-white/[0.02]'
       }`}
     >
-      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'group-hover:text-primary transition-colors'}`} />
+      <Icon className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${isActive ? 'scale-105' : 'group-hover:scale-105'}`} strokeWidth={isActive ? 2.5 : 2} />
       <AnimatePresence mode="wait">
         {!collapsed && (
           <motion.span 
-            initial={{ opacity: 0, x: -10 }}
+            initial={{ opacity: 0, x: -5 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            className="font-medium whitespace-nowrap"
+            exit={{ opacity: 0, x: -5 }}
+            className="font-bold whitespace-nowrap text-[13px] tracking-wide"
           >
             {label}
           </motion.span>
         )}
       </AnimatePresence>
+      
       {isActive && (
         <motion.div 
-          layoutId="sidebar-active"
-          className="absolute inset-0 bg-primary rounded-xl -z-10 shadow-lg shadow-primary/20"
-          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+          layoutId="sidebar-active-indicator"
+          className="absolute left-0 w-[3px] h-5 bg-[#7c5cfc] rounded-r-full"
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
         />
       )}
     </Link>
@@ -65,38 +66,39 @@ const Sidebar = () => {
   return (
     <motion.aside 
       initial={false}
-      animate={{ width: sidebarCollapsed ? 80 : 256 }}
-      className="fixed left-0 top-0 h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 flex flex-col shadow-xl"
+      animate={{ width: sidebarCollapsed ? 80 : 280 }}
+      className="fixed left-0 top-0 h-screen bg-white dark:bg-[#0a0a0f] border-r border-zinc-200 dark:border-[rgba(255,255,255,0.07)] z-50 flex flex-col transition-colors duration-300"
     >
-      {/* Header */}
-      <div className="p-6 flex items-center justify-between">
+      {/* Professional Header */}
+      <div className="h-20 flex items-center px-6 border-b border-zinc-200 dark:border-[rgba(255,255,255,0.07)]">
         <div className="flex items-center space-x-3 overflow-hidden">
-          <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
-            <BrainCircuit className="w-6 h-6 text-primary animate-pulse" />
+          <div className="relative shrink-0">
+            <div className="w-10 h-10 bg-zinc-900 dark:bg-[#0f1117] rounded-[10px] border border-zinc-200 dark:border-[rgba(255,255,255,0.07)] flex items-center justify-center">
+              <BrainCircuit className="w-6 h-6 text-[#7c5cfc]" />
+            </div>
           </div>
           <AnimatePresence>
             {!sidebarCollapsed && (
-              <motion.span 
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                className="font-bold text-xl tracking-tight text-slate-900 dark:text-white whitespace-nowrap"
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="flex flex-col"
               >
-                DocuMind
-              </motion.span>
+                <span className="font-bold text-lg tracking-tight text-zinc-900 dark:text-[#fff] whitespace-nowrap">
+                  DocuMind
+                </span>
+                <span className="text-[9px] text-indigo-600 dark:text-[#7c5cfc] font-bold uppercase tracking-[0.2em] -mt-1">
+                  Neural Portal
+                </span>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
-        <button 
-          onClick={toggleSidebar}
-          className="hidden md:flex p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 hover:text-primary transition-colors"
-        >
-          {sidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-        </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-8 space-y-2">
+      {/* Navigation Matrix */}
+      <nav className="flex-1 px-3 py-6 space-y-1">
         {navItems.map((item) => (
           <SidebarItem 
             key={item.path} 
@@ -106,20 +108,41 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-border">
+      {/* Toggle Button */}
+      <button 
+        onClick={toggleSidebar}
+        className="absolute -right-3 top-24 w-6 h-6 bg-white dark:bg-[#0f1117] border border-zinc-200 dark:border-[rgba(255,255,255,0.07)] rounded-full text-zinc-400 hover:text-[#7c5cfc] transition-all shadow-sm z-50 md:flex hidden items-center justify-center hover:scale-110"
+      >
+        {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+      </button>
+
+      {/* User Session */}
+      <div className="p-4 border-t border-zinc-200 dark:border-[rgba(255,255,255,0.07)]">
+        {!sidebarCollapsed && (
+          <div className="px-3 py-4 mb-2 flex items-center space-x-3 group cursor-pointer transition-colors hover:bg-white/5 rounded-[10px]">
+            <div className="w-9 h-9 rounded-[10px] bg-zinc-100 dark:bg-[#0f1117] border border-zinc-200 dark:border-white/5 flex items-center justify-center text-[10px] font-bold text-zinc-600 dark:text-[#7c5cfc]">
+              AD
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-bold text-zinc-900 dark:text-[#fff] truncate">Systems Admin</span>
+              <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">L3 Engineer</span>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={logout}
-          className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-red-400/80 hover:bg-red-500/10 transition-all group ${
+          className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-[10px] text-zinc-500 dark:text-white/45 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all group font-bold text-[11px] uppercase tracking-widest ${
             sidebarCollapsed ? 'justify-center' : ''
           }`}
         >
-          <LogOut className="w-5 h-5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-          {!sidebarCollapsed && <span className="font-medium">Logout</span>}
+          <LogOut className="w-4 h-4 flex-shrink-0" />
+          {!sidebarCollapsed && <span>End Session</span>}
         </button>
       </div>
     </motion.aside>
   )
 }
+
 
 export default Sidebar

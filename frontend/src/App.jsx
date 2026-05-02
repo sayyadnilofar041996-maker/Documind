@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage'
 import DocumentsPage from './pages/DocumentsPage'
 import ChatPage from './pages/ChatPage'
 import DashboardPage from './pages/DashboardPage'
+import SettingsPage from './pages/SettingsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import MainLayout from './components/MainLayout'
 import useAuthStore from './store/authStore'
@@ -24,15 +25,25 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-sans transition-colors duration-300">
+      <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white font-sans transition-colors duration-500 selection:bg-indigo-500/20">
         <Toaster 
           position="top-right"
           toastOptions={{
             style: {
-              background: '#1a1a1a',
-              color: '#fff',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '12px'
+              background: '#09090b',
+              color: '#fafafa',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              borderRadius: '12px',
+              fontSize: '12px',
+              fontWeight: '600',
+              letterSpacing: '0.025em',
+              padding: '12px 20px',
+            },
+            success: {
+              iconTheme: {
+                primary: '#6366f1',
+                secondary: '#ffffff',
+              },
             },
           }}
         />
@@ -47,7 +58,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/documents" element={<DocumentsPage />} />
               <Route path="/chat" element={<ChatPage />} />
-              <Route path="/settings" element={<div className="p-4"><h1 className="text-3xl font-bold text-white">Settings</h1></div>} />
+              <Route path="/settings" element={<SettingsPage />} />
               
               {/* Redirect root to dashboard */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />

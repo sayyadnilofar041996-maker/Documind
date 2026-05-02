@@ -18,6 +18,7 @@ const useChatStore = create(
       activeSessionId: null,
       loading: false,
       selectedDocument: null,
+      selectedDocuments: [], // Array for multi-doc mode
       selectedModel: 'llama-3.1-8b-instant',
       inputDraft: '',
       error: null,
@@ -44,6 +45,23 @@ const useChatStore = create(
       },
 
       setSelectedDocument: (doc) => set({ selectedDocument: doc }),
+      
+      setSelectedDocuments: (docs) => set({ selectedDocuments: docs }),
+      
+      toggleDocumentSelection: (doc) => set((state) => {
+        const isSelected = state.selectedDocuments.some(d => d.id === doc.id)
+        const updated = isSelected 
+          ? state.selectedDocuments.filter(d => d.id !== doc.id)
+          : [...state.selectedDocuments, doc]
+        
+        return { 
+          selectedDocuments: updated,
+          // For backward compat, set selectedDocument to null if multiple, 
+          // or the single doc if only one is selected
+          selectedDocument: updated.length === 1 ? updated[0] : null 
+        }
+      }),
+
       setSelectedModel: (model) => set({ selectedModel: model }),
       setInputDraft: (content) => set({ inputDraft: content }),
 
@@ -120,7 +138,15 @@ const useChatStore = create(
         set({ loading: true, error: null })
 
         try {
-          const response = await chatApi.askQuestion(content, selectedDocument?.id, 'llama-3.1-8b-instant')
+          const { selectedDocuments } = get()
+          const docIds = selectedDocuments.length > 0 ? selectedDocuments.map(d => d.id) : null
+          
+          const response = await chatApi.askQuestion(
+            content, 
+            selectedDocument?.id, 
+            'llama-3.1-8b-instant',
+            docIds
+          )
           const aiContent = response.data.answer || response.data.response
           const sources = response.data.sources || []
 
@@ -159,6 +185,7 @@ const useChatStore = create(
         })),
         activeSessionId: state.activeSessionId,
         selectedDocument: state.selectedDocument,
+        selectedDocuments: state.selectedDocuments,
         selectedModel: state.selectedModel,
         historyOpen: state.historyOpen,
       }),

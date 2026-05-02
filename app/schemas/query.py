@@ -16,7 +16,8 @@ class AskRequest(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     question: str = Field(..., description="The user's question about the document(s)")
-    document_id: uuid.UUID | None = Field(None, description="Optional document ID to restrict search to")
+    document_id: uuid.UUID | None = Field(None, description="Legacy single document ID")
+    document_ids: list[uuid.UUID] | None = Field(None, description="List of document IDs to restrict search to")
     session_id: uuid.UUID | None = Field(None, description="Optional session ID for chat history context")
     model: str | None = Field("llama3-8b-8192", description="Groq model ID to use")
 

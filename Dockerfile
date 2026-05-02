@@ -27,6 +27,7 @@ RUN apt-get update --fix-missing && apt-get install -y \
     libpq-dev \
     curl \
     libmagic1 \
+    antiword \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first (Docker layer cache optimization)

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuMind - College Presentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --bg-dark: #020617;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        h1, h2, h3 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+        }
+        .slide {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(20px);
+            pointer-events: none;
+            padding: 2rem;
+            text-align: center;
+        }
+        .slide.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .bg-mesh {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background-image: url('bg_presentation.png');
+            background-size: cover;
+            background-position: center;
+            filter: brightness(0.4) saturate(1.2);
+        }
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at center, transparent 0%, var(--bg-dark) 100%);
+        }
+        .glass {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .glow-text {
+            text-shadow: 0 0 20px var(--primary-glow);
+        }
+        .step-card {
+            transition: all 0.3s ease;
+        }
+        .step-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+        .nav-dots {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 50;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .dot.active {
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+            transform: scale(1.5);
+        }
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: var(--primary);
+            z-index: 100;
+            transition: width 0.3s ease;
+        }
+        kbd {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-mesh"></div>
+    <div class="bg-overlay"></div>
+    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+
+    <!-- Navigation Dots -->
+    <div class="nav-dots" id="navDots"></div>
+
+    <!-- Slides -->
+    <main id="slider">
+        <!-- Slide 1: Introduction -->
+        <section class="slide active">
+            <div class="glass p-12 max-w-4xl">
+                <div class="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 px-4 py-1 rounded-full text-indigo-400 text-sm font-medium mb-6 animate-pulse">
+                    <span>🚀 Project Presentation 2026</span>
+                </div>
+                <h1 class="text-7xl font-extrabold mb-4 glow-text tracking-tighter">DocuMind</h1>
+                <p class="text-2xl text-slate-400 mb-8 max-w-2xl mx-auto font-light">
+                    AI-Powered Document Intelligence Platform using RAG Architecture
+                </p>
+                
+                <div class="mt-8 space-y-1">
+                    <div class="text-xl font-bold text-indigo-400">Nilofar Sayyad</div>
+                    <div class="text-slate-500 font-medium">MCA II | Pirens IBMA, Loni</div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-6 text-sm text-slate-500 uppercase tracking-widest mt-12 border-t border-slate-800 pt-8">
+                    <div>Smart Analysis</div>
+                    <div>Vector Search</div>
+                    <div>Instant Insights</div>
+                </div>
+            </div>
+            <div class="mt-12 text-slate-500 flex items-center gap-3">
+                <span>Use <kbd>SPACE</kbd> or <kbd>→</kbd> to navigate</span>
+            </div>
+        </section>
+
+        <!-- Slide 2: The Core Problem -->
+        <section class="slide">
+            <div class="max-w-5xl w-full">
+                <h2 class="text-5xl font-bold mb-12">The Challenge</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="glass p-8 step-card">
+                        <div class="w-12 h-12 bg-red-500/20 text-red-400 rounded-xl flex items-center justify-center mb-6 mx-auto text-2xl">📦</div>
+                        <h3 class="text-xl font-semibold mb-4">Information Overload</h3>
+                        <p class="text-slate-400 text-sm">Managing thousands of documents manually is impossible and prone to error.</p>
+                    </div>
+                    <div class="glass p-8 step-card">
+                        <div class="w-12 h-12 bg-orange-500/20 text-orange-400 rounded-xl flex items-center justify-center mb-6 mx-auto text-2xl">🔍</div>
+                        <h3 class="text-xl font-semibold mb-4">Slow Retrieval</h3>
+                        <p class="text-slate-400 text-sm">Finding specific information in deeply nested PDFs takes hours of manual searching.</p>
+                    </div>
+                    <div class="glass p-8 step-card">
+                        <div class="w-12 h-12 bg-yellow-500/20 text-yellow-400 rounded-xl flex items-center justify-center mb-6 mx-auto text-2xl">📜</div>
+                        <h3 class="text-xl font-semibold mb-4">Context Blindness</h3>
+                        <p class="text-slate-400 text-sm">Traditional search fails to understand the actual meaning and context of queries.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 3: The Solution (RAG) -->
+        <section class="slide">
+            <div class="glass p-12 max-w-5xl w-full">
+                <h2 class="text-5xl font-bold mb-8">The Solution: DocuMind</h2>
+                <p class="text-xl text-slate-300 mb-12">Leveraging <b>Retrieval-Augmented Generation (RAG)</b> to bridge the gap between static documents and dynamic AI.</p>
+                
+                <div class="flex flex-col md:flex-row items-center justify-between gap-8 mt-8">
+                    <div class="flex-1 space-y-4 text-left">
+                        <div class="flex items-center gap-4">
+                            <span class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold">1</span>
+                            <span class="text-lg">Intelligent Document Ingestion</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold">2</span>
+                            <span class="text-lg">Vector Embedding Strategy</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold">3</span>
+                            <span class="text-lg">Semantic Search Retrieval</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold">4</span>
+                            <span class="text-lg">LLM Prompt Augmentation</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 glass bg-white/5 p-6 border-indigo-500/30">
+                        <div class="text-indigo-400 text-sm font-mono mb-4 text-left">// RAG Logic Flow</div>
+                        <div class="space-y-2 text-left text-sm font-mono text-slate-400">
+                           <div class="pl-2">Query -> Encoder (MiniLM)</div>
+                           <div class="pl-2">Vector Search (pgvector)</div>
+                           <div class="pl-2">Retrieve Top-K Chunks</div>
+                           <div class="pl-2">LLM (Groq/Llama3) -> Answer</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: Core Concepts (RAG, Chunks, Embeddings) -->
+        <section class="slide">
+            <h2 class="text-5xl font-bold mb-12">RAG 101: Core Concepts</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl w-full">
+                <div class="glass p-8 relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity">✂️</div>
+                    <h3 class="text-2xl font-bold text-indigo-400 mb-4">1. Chunks</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed text-left">
+                        AI models have a limited "Context Window." We break long PDFs into smaller, overlapping <b>Chunks</b> (e.g., 500 words each). This ensures the AI can "read" every part of the document without losing track.
+                    </p>
+                </div>
+
+                <div class="glass p-8 relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity">🔢</div>
+                    <h3 class="text-2xl font-bold text-purple-400 mb-4">2. Embeddings</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed text-left">
+                        We convert text into <b>Mathematical Vectors</b> (lists of numbers). These numbers represent the <i>concepts</i> in the text. Similar meanings end up close together in mathematical space.
+                    </p>
+                </div>
+
+                <div class="glass p-8 relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 text-6xl opacity-10 group-hover:opacity-20 transition-opacity">🧠+🔍</div>
+                    <h3 class="text-2xl font-bold text-pink-400 mb-4">3. RAG</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed text-left">
+                        <b>Retrieval-Augmented Generation</b>: We "Retrieve" the most relevant chunks first, then "Augment" the AI's prompt with that data. The AI generates an answer based 100% on <b>Fact</b>, not memory.
+                    </p>
+                </div>
+            </div>
+            <div class="mt-12 glass px-6 py-2 border-slate-800">
+                <p class="text-slate-500 text-xs italic">"RAG turns a generic AI into a specialist for YOUR data."</p>
+            </div>
+        </section>
+
+        <!-- Slide 5: Project Scope -->
+        <section class="slide">
+            <h2 class="text-5xl font-bold mb-10">Project Scope</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
+                <div class="glass p-8 border-r-4 border-indigo-500 text-left">
+                    <h3 class="text-2xl font-bold text-indigo-400 mb-4">🎯 Target Audience</h3>
+                    <ul class="text-slate-400 space-y-3">
+                        <li class="flex items-center gap-2"><span>💎</span> Researchers & Academics</li>
+                        <li class="flex items-center gap-2"><span>💎</span> Legal & Compliance Teams</li>
+                        <li class="flex items-center gap-2"><span>💎</span> Corporate Knowledge Labs</li>
+                    </ul>
+                </div>
+                <div class="glass p-8 border-r-4 border-purple-500 text-left">
+                    <h3 class="text-2xl font-bold text-purple-400 mb-4">💡 Primary Use-Cases</h3>
+                    <ul class="text-slate-400 space-y-3">
+                        <li class="flex items-center gap-2"><span>⚡</span> Semantic Search over massive PDF libraries</li>
+                        <li class="flex items-center gap-2"><span>⚡</span> Automated summarization of technical reports</li>
+                        <li class="flex items-center gap-2"><span>⚡</span> Fact-checked Q&A for enterprise data</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: Industry Applications -->
+        <section class="slide">
+            <h2 class="text-5xl font-bold mb-12">Real-World Industry Applications</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl">
+                <div class="glass p-6 border-b-4 border-blue-500">
+                    <div class="text-3xl mb-4">⚖️</div>
+                    <h3 class="text-lg font-bold mb-2">Legal Tech</h3>
+                    <p class="text-xs text-slate-400">Automated contract auditing and fast retrieval of legal precedents from case archives.</p>
+                </div>
+                <div class="glass p-6 border-b-4 border-green-500">
+                    <div class="text-3xl mb-4">🏥</div>
+                    <h3 class="text-lg font-bold mb-2">Healthcare</h3>
+                    <p class="text-xs text-slate-400">Querying thousands of medical journals to assist in fast diagnosis and research.</p>
+                </div>
+                <div class="glass p-6 border-b-4 border-indigo-500">
+                    <div class="text-3xl mb-4">💼</div>
+                    <h3 class="text-lg font-bold mb-2">Corporate HR</h3>
+                    <p class="text-xs text-slate-400">Instant employee support for complex policy handbooks and internal documentation.</p>
+                </div>
+                <div class="glass p-6 border-b-4 border-purple-500">
+                    <div class="text-3xl mb-4">🎓</div>
+                    <h3 class="text-lg font-bold mb-2">Education</h3>
+                    <h3 class="text-lg font-bold mb-2">Research</h3>
+                    <p class="text-xs text-slate-400">Helping students analyze dense textbooks and research papers with zero hallucinations.</p>
+                </div>
+            </div>
+            <div class="mt-10 p-6 glass border-indigo-500/30 max-w-2xl">
+                <p class="text-slate-300 text-sm italic">"DocuMind bridges the gap between raw data and actionable intelligence."</p>
+            </div>
+        </section>
+
+        <!-- Slide 4: System Architecture -->
+        <section class="slide">
+            <h2 class="text-5xl font-bold mb-10">System Architecture</h2>
+            <div class="max-w-6xl w-full">
+                <!-- Top Layer: Client & Entry -->
+                <div class="flex justify-center gap-10 mb-8">
+                    <div class="glass p-6 w-64 border-b-4 border-blue-500">
+                        <div class="text-blue-400 text-sm font-bold uppercase mb-2">User Interface</div>
+                        <h3 class="text-xl font-bold mb-2">React Client</h3>
+                        <p class="text-[10px] text-slate-400">Vite-powered SPA using TailwindCSS for a responsive, high-performance UI experience.</p>
+                    </div>
+                    <div class="flex items-center text-3xl text-slate-700">⟷</div>
+                    <div class="glass p-6 w-64 border-b-4 border-green-500">
+                        <div class="text-green-400 text-sm font-bold uppercase mb-2">Gateway</div>
+                        <h3 class="text-xl font-bold mb-2">FastAPI Server</h3>
+                        <p class="text-[10px] text-slate-400">Asynchronous Python backend handling authentication, rate-limiting, and request routing.</p>
+                    </div>
+                </div>
+
+                <!-- Middle Layer: Logic & Processing -->
+                <div class="grid grid-cols-3 gap-6">
+                    <div class="glass p-5 border-l-4 border-indigo-500">
+                        <div class="text-indigo-400 text-[10px] font-bold uppercase mb-1">Async Processing</div>
+                        <h4 class="font-bold mb-2">Celery + Redis</h4>
+                        <ul class="text-[9px] text-slate-400 text-left space-y-1 list-disc pl-3">
+                            <li>Redis acts as a high-speed message broker.</li>
+                            <li>Celery workers handle long-running OCR and embedding tasks.</li>
+                            <li>Prevents API blocking during batch document processing.</li>
+                        </ul>
+                    </div>
+                    <div class="glass p-5 border-l-4 border-purple-500">
+                        <div class="text-purple-400 text-[10px] font-bold uppercase mb-1">Vector Storage</div>
+                        <h4 class="font-bold mb-2">pgvector (DB)</h4>
+                        <ul class="text-[9px] text-slate-400 text-left space-y-1 list-disc pl-3">
+                            <li>Stored in PostgreSQL 16 for reliability.</li>
+                            <li>Uses HNSW index for sub-millisecond similarity search.</li>
+                            <li>Stores document chunks as high-dimensional embeddings.</li>
+                        </ul>
+                    </div>
+                    <div class="glass p-5 border-l-4 border-pink-500">
+                        <div class="text-pink-400 text-[10px] font-bold uppercase mb-1">AI Inference</div>
+                        <h4 class="font-bold mb-2">Groq Llama 3</h4>
+                        <ul class="text-[9px] text-slate-400 text-left space-y-1 list-disc pl-3">
+                            <li>Hardware accelerated LPU (Language Processing Unit).</li>
+                            <li>Generates responses based on retrieved document context.</li>
+                            <li>Ensures real-time interaction even with complex queries.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Bottom Layer: Observability -->
+                <div class="mt-8 flex justify-center">
+                    <div class="glass px-8 py-3 flex items-center gap-4">
+                        <div class="text-red-400 animate-pulse">●</div>
+                        <div class="text-xs font-mono text-slate-500">Real-time Monitoring & Metrics: <span class="text-white">Prometheus Exporter</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: Tech Stack -->
+        <section class="slide">
+            <h2 class="text-5xl font-bold mb-12">Technical Stack</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 w-full max-w-5xl">
+                <div class="glass p-6">
+                    <div class="text-4xl mb-4">🐍</div>
+                    <div class="font-bold">Python 3.12</div>
+                    <div class="text-xs text-slate-500 mb-2">FastAPI, SQLAlchemy</div>
+                    <p class="text-[10px] text-slate-400 leading-tight">Project core logic & backend AI integration handler.</p>
+                </div>
+                <div class="glass p-6">
+                    <div class="text-4xl mb-4">🐘</div>
+                    <div class="font-bold">PostgreSQL 16</div>
+                    <div class="text-xs text-slate-500 mb-2">pgvector, HNSW Index</div>
+                    <p class="text-[10px] text-slate-400 leading-tight">Reliable data storage with high-speed vector search capabilities.</p>
+                </div>
+                <div class="glass p-6">
+                    <div class="text-4xl mb-4">🐳</div>
+                    <div class="font-bold">Docker</div>
+                    <div class="text-xs text-slate-500 mb-2">Service Orchestration</div>
+                    <p class="text-[10px] text-slate-400 leading-tight">Containerization for consistent deployment across all platforms.</p>
+                </div>
+                <div class="glass p-6">
+                    <div class="text-4xl mb-4">⚛️</div>
+                    <div class="font-bold">React.js</div>
+                    <div class="text-xs text-slate-500 mb-2">Client-side rendering</div>
+                    <p class="text-[10px] text-slate-400 leading-tight">Premium, interactive UI with real-time feedback loops.</p>
+                </div>
+                <div class="glass p-6">
+                    <div class="text-4xl mb-4">🚀</div>
+                    <div class="font-bold">Groq API</div>
+                    <div class="text-xs text-slate-500 mb-2">Llama3-8B Inference</div>
+                    <p class="text-[10px] text-slate-400 leading-tight">Ultra-fast AI inference engine with native support for structured source code parsing.</p>
+                </div>
+                <div class="glass p-6">
+                    <div class="text-4xl mb-4">🧠</div>
+                    <div class="font-bold">HuggingFace</div>
+                    <div class="text-xs text-slate-500 mb-2">MiniLM Embeddings</div>
+                    <p class="text-[10px] text-slate-400 leading-tight">Converts text into mathematical vectors for semantic search.</p>
+                </div>
+                <div class="glass p-6">
+                    <div class="text-4xl mb-4">📦</div>
+                    <div class="font-bold">Redis</div>
+                    <div class="text-xs text-slate-500 mb-2">Task Broker & Queue</div>
+                    <p class="text-[10px] text-slate-400 leading-tight">Fast message broker for handling heavy background AI tasks.</p>
+                </div>
+                <div class="glass p-6">
+                    <div class="text-4xl mb-4">📊</div>
+                    <div class="font-bold">Prometheus</div>
+                    <div class="text-xs text-slate-500 mb-2">System Metrics</div>
+                    <p class="text-[10px] text-slate-400 leading-tight">Real-time monitoring of API performance and system health.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: Key Features -->
+        <section class="slide">
+            <h2 class="text-5xl font-bold mb-12">Platform Capabilities</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl w-full">
+                <div class="glass p-6 text-left border-l-4 border-indigo-500">
+                    <h3 class="text-xl font-bold mb-2">Unified Document Viewer</h3>
+                    <p class="text-slate-400 text-sm">Preview PDFs, text, and code files with syntax highlighting directly in the app.</p>
+                </div>
+                <div class="glass p-6 text-left border-l-4 border-indigo-500">
+                    <h3 class="text-xl font-bold mb-2">Smart Highlighting</h3>
+                    <h3 class="text-xl font-bold mb-2">Source Citations</h3>
+                    <p class="text-slate-400 text-sm">Every answer is backed by direct quotes from your documents with page references.</p>
+                </div>
+                <div class="glass p-6 text-left border-l-4 border-indigo-500">
+                    <h3 class="text-xl font-bold mb-2">Vectorized Search</h3>
+                    <p class="text-slate-400 text-sm">Semantic search that understands "What is our revenue?" even if the word isn't in the file.</p>
+                </div>
+                <div class="glass p-6 text-left border-l-4 border-green-500">
+                    <h3 class="text-xl font-bold mb-2">Async Processing</h3>
+                    <p class="text-slate-400 text-sm">Background task handling for large document batches without UI freezing.</p>
+                </div>
+                <div class="glass p-6 text-left border-l-4 border-green-500">
+                    <h3 class="text-xl font-bold mb-2">Modern UI/UX</h3>
+                    <p class="text-slate-400 text-sm">Premium glassmorphic interface with Framer Motion animations for a professional feel.</p>
+                </div>
+                <div class="glass p-6 text-left border-l-4 border-green-500">
+                    <h3 class="text-xl font-bold mb-2">Universal Code Intelligence</h3>
+                    <p class="text-slate-400 text-sm">Native support for C, C++, Java, Python, JS & more — handles structured logic analysis.</p>
+                </div>
+                <div class="glass p-6 text-left border-l-4 border-green-500">
+                    <h3 class="text-xl font-bold mb-2">Rate Limiting</h3>
+                    <p class="text-slate-400 text-sm">Robust security and API protection ensuring stable service under heavy load.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 7: User Management Module -->
+        <section class="slide">
+            <h2 class="text-5xl font-bold mb-12">User Management Module</h2>
+            <div class="glass p-10 max-w-4xl w-full">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 text-left">
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">👤</div>
+                            <div>
+                                <h4 class="font-bold underline decoration-indigo-500 decoration-2 underline-offset-4">Registration & Login</h4>
+                                <p class="text-xs text-slate-500">Secure entry with password hashing (BCrypt).</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">🔑</div>
+                            <div>
+                                <h4 class="font-bold underline decoration-indigo-500 decoration-2 underline-offset-4">JWT Authorization</h4>
+                                <p class="text-xs text-slate-500">Token-based secure sessions for API access.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">📂</div>
+                            <div>
+                                <h4 class="font-bold underline decoration-indigo-500 decoration-2 underline-offset-4">Ownership Isolation</h4>
+                                <p class="text-xs text-slate-500">Users only access their OWN uploaded documents.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">⚙️</div>
+                            <div>
+                                <h4 class="font-bold underline decoration-indigo-500 decoration-2 underline-offset-4">Member Profiles</h4>
+                                <p class="text-xs text-slate-500">Personalized settings, themes, and account management.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 8: Demo Highlights -->
+        <section class="slide">
+            <h2 class="text-5xl font-bold mb-10">Project Walkthrough</h2>
+            <div class="grid grid-cols-2 gap-8 w-full max-w-6xl">
+                <div class="glass p-2 overflow-hidden rounded-2xl border-indigo-500/30">
+                    <img src="dashboard.png" alt="Dashboard" class="w-full h-64 object-cover rounded-xl shadow-2xl">
+                    <div class="mt-2 text-xs font-bold text-indigo-400">Main Dashboard</div>
+                </div>
+                <div class="glass p-2 overflow-hidden rounded-2xl border-purple-500/30">
+                    <img src="chat.png" alt="AI Chat" class="w-full h-64 object-cover rounded-xl shadow-2xl">
+                    <div class="mt-2 text-xs font-bold text-purple-400">AI Assistant / Chat</div>
+                </div>
+            </div>
+            <div class="mt-8 glass p-6 max-w-2xl">
+                <p class="text-slate-300 text-sm leading-relaxed italic">
+                    "Live Demo: showcasing the seamless integration between document parsing, vector retrieval, and ultra-fast AI inference on local hardware."
+                </p>
+            </div>
+        </section>
+
+        <!-- Slide 11: Future Scope -->
+        <section class="slide">
+            <div class="glass p-12 max-w-4xl">
+                <h2 class="text-5xl font-bold mb-8">Future Roadmap</h2>
+                <div class="space-y-6 text-left">
+                    <div class="flex items-start gap-4">
+                        <div class="mt-1">✅</div>
+                        <div>
+                            <div class="font-bold text-lg underline underline-offset-4 decoration-indigo-500">Phase 1-6: Core RAG</div>
+                            <p class="text-slate-400">Database integration, vector search, and async pipeline complete.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4 opacity-70">
+                        <div class="mt-1">🕒</div>
+                        <div>
+                            <div class="font-bold text-lg">Phase 7-8: Advanced Features</div>
+                            <p class="text-slate-400">Multi-modal support (images/OCR), user authentication, and team collaboration.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4 opacity-50">
+                        <div class="mt-1">🚀</div>
+                        <div>
+                            <div class="font-bold text-lg">Expansion: Enterprise Deployment</div>
+                            <p class="text-slate-400">Private cloud deployment, hybrid search models, and custom LLM fine-tuning.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 12: Roadmap Deep-Dive -->
+        <section class="slide">
+            <h2 class="text-5xl font-bold mb-10 text-indigo-400">Implementation Deep-Dive</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
+                <div class="glass p-8 border-t-2 border-indigo-500">
+                    <h3 class="text-xl font-bold mb-4">🖼️ Multi-modal</h3>
+                    <ul class="text-xs text-slate-400 space-y-2 text-left">
+                        <li>• <b>OCR Integration</b>: Using Tesseract/EasyOCR for scanned hardware manuals.</li>
+                        <li>• <b>Vision-Language Models</b>: Connecting Llama 3.2 Vision to interpret diagrams.</li>
+                    </ul>
+                </div>
+                <div class="glass p-8 border-t-2 border-blue-500">
+                    <h3 class="text-xl font-bold mb-4">🔐 Advanced Auth</h3>
+                    <ul class="text-xs text-slate-400 space-y-2 text-left">
+                        <li>• <b>JWT & OAuth2</b>: Current foundation for secure, token-based sessions.</li>
+                        <li>• <b>Fine-grained ACL</b>: Access Control Lists to restrict docs to specific roles.</li>
+                    </ul>
+                </div>
+                <div class="glass p-8 border-t-2 border-purple-500">
+                    <h3 class="text-xl font-bold mb-4">👥 Collaboration</h3>
+                    <ul class="text-xs text-slate-400 space-y-2 text-left">
+                        <li>• <b>Org-Level Indexing</b>: Shared vector spaces for department-wide knowledge.</li>
+                        <li>• <b>Synchronous Chat</b>: Multiple users auditing a single document in real-time.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 10: Conclusion & Impact -->
+        <section class="slide">
+            <div class="glass p-12 max-w-4xl border-t-4 border-indigo-500">
+                <h2 class="text-5xl font-bold mb-10">Conclusion & Practical Impact</h2>
+                <div class="grid grid-cols-2 gap-8 text-left">
+                    <div>
+                        <h4 class="text-indigo-400 font-bold mb-2 uppercase text-xs">Technical Achievement</h4>
+                        <p class="text-slate-300 text-sm">Successfully implemented a distributed RAG pipeline with high-speed inference and asynchronous processing.</p>
+                    </div>
+                    <div>
+                        <h4 class="text-indigo-400 font-bold mb-2 uppercase text-xs">Real-World Value</h4>
+                        <p class="text-slate-300 text-sm">Automates document analysis, saving up to 90% of manual research time for complex PDFs and reports.</p>
+                    </div>
+                </div>
+                <div class="mt-12 p-6 bg-indigo-500/5 rounded-xl border border-indigo-500/10">
+                    <p class="text-slate-400 text-sm italic">"DocuMind demonstrates how modern AI can be grounded in private, factual data to provide reliable and verifiable insights."</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 8: Thank You -->
+        <section class="slide">
+            <div class="glass p-16 max-w-4xl relative overflow-hidden">
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/20 blur-[100px] rounded-full"></div>
+                <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-600/20 blur-[100px] rounded-full"></div>
+                
+                <h2 class="text-6xl font-bold mb-6 glow-text">DocuMind</h2>
+                <p class="text-2xl text-slate-400 mb-12 italic">"Unlocking the intelligence hidden in your documents."</p>
+                
+                <hr class="border-slate-800 mb-12">
+                
+                <h3 class="text-3xl font-bold mb-6">Thank You!</h3>
+                <p class="text-lg text-slate-500 mb-2">Presented to: College Science & Tech Seminar</p>
+                <div class="flex justify-center gap-8 mt-12">
+                    <div class="text-indigo-400 border border-indigo-500/30 px-6 py-2 rounded-full hover:bg-indigo-500/10 cursor-pointer transition-all">Any Questions?</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const navDots = document.getElementById('navDots');
+        const progressBar = document.getElementById('progressBar');
+        let currentSlide = 0;
+
+        // Initialize Nav Dots
+        slides.forEach((_, i) => {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => goToSlide(i));
+            navDots.appendChild(dot);
+        });
+
+        const dots = document.querySelectorAll('.dot');
+
+        function updateUI() {
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === currentSlide);
+            });
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentSlide);
+            });
+            const progress = ((currentSlide) / (slides.length - 1)) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function goToSlide(n) {
+            currentSlide = (n + slides.length) % slides.length;
+            updateUI();
+        }
+
+        function nextSlide() {
+            goToSlide(currentSlide + 1);
+        }
+
+        function prevSlide() {
+            goToSlide(currentSlide - 1);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+        });
+
+        // Mouse Wheel Support
+        let lastWheelTime = 0;
+        window.addEventListener('wheel', (e) => {
+            const now = Date.now();
+            if (now - lastWheelTime < 800) return;
+            
+            if (e.deltaY > 0) {
+                nextSlide();
+            } else {
+                prevSlide();
+            }
+            lastWheelTime = now;
+        });
+    </script>
+</body>
+</html>

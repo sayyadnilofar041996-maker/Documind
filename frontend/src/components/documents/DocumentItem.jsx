@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Trash2, Clock, CheckCircle, Loader2, AlertCircle, FileText, FileType, FileCode } from 'lucide-react'
+import { Trash2, Clock, CheckCircle, Loader2, AlertCircle, FileText, FileType, FileCode, Presentation, FileSpreadsheet, ExternalLink } from 'lucide-react'
 import useDocumentStore from '../../store/documentStore'
 import client from '../../api/client'
 import toast from 'react-hot-toast'
@@ -12,14 +12,19 @@ const DocumentItem = ({ document }) => {
     const ext = filename.split('.').pop()?.toLowerCase()
     switch (ext) {
       case 'pdf':
-        return { icon: FileText, color: 'text-red-500', bg: 'bg-red-500/10' }
+        return { icon: FileText, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10' }
       case 'docx':
       case 'doc':
-        return { icon: FileType, color: 'text-blue-500', bg: 'bg-blue-500/10' }
-      case 'txt':
-        return { icon: FileCode, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-500/10 dark:bg-slate-400/10' }
+        return { icon: FileType, color: 'text-[#4fa3f7]', bg: 'bg-indigo-50 dark:bg-[#4fa3f7]/10' }
+      case 'pptx':
+      case 'ppt':
+        return { icon: Presentation, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' }
+      case 'xlsx':
+      case 'xls':
+      case 'csv':
+        return { icon: FileSpreadsheet, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' }
       default:
-        return { icon: FileText, color: 'text-primary', bg: 'bg-primary/10' }
+        return { icon: FileCode, color: 'text-[#4fa3f7]', bg: 'bg-indigo-50 dark:bg-[#4fa3f7]/10' }
     }
   }
 
@@ -27,30 +32,28 @@ const DocumentItem = ({ document }) => {
     switch (status) {
       case 'ready':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/20">
-            <CheckCircle className="w-3 h-3" />
+          <div className="flex items-center space-x-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
             Ready
-          </span>
+          </div>
         )
       case 'processing':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            Processing
-          </span>
+          <div className="flex items-center space-x-2 px-3 py-1 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded animate-pulse text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>Processing</span>
+          </div>
         )
       case 'failed':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-500 border border-red-500/20">
-            <AlertCircle className="w-3 h-3" />
-            Failed
-          </span>
+          <div className="flex items-center space-x-2 px-3 py-1 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+            Error
+          </div>
         )
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800">
-            Pending
-          </span>
+          <div className="flex items-center space-x-2 px-3 py-1 bg-zinc-50 dark:bg-zinc-500/10 border border-zinc-200 dark:border-[rgba(255,255,255,0.07)] rounded text-[10px] font-bold text-zinc-500 dark:text-white/45 uppercase tracking-wider">
+            Queued
+          </div>
         )
     }
   }
@@ -70,65 +73,67 @@ const DocumentItem = ({ document }) => {
     })
   }
 
-  const handleOpen = async () => {
+  const handleOpen = async (e) => {
+    e.stopPropagation()
     try {
-      const toastId = toast.loading('Opening document...')
+      const toastId = toast.loading('Initializing preview...')
       const response = await client.get(`/documents/${document.id}/file`, { responseType: 'blob' })
       const blobUrl = URL.createObjectURL(response.data)
       window.open(blobUrl, '_blank')
       toast.dismiss(toastId)
     } catch (err) {
-      toast.error('Failed to open document')
+      toast.error('Failed to initialize preview')
       console.error(err)
     }
   }
 
-  const filename = document.original_filename || document.filename || document.name || 'Untitled'
+  const filename = document.original_filename || document.filename || document.name || 'Data_Stream'
   const { icon: FileIcon, color, bg } = getFileIcon(filename)
 
   return (
-    <motion.div
-      layout
-      whileHover={{ scale: 1.01 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-      onClick={handleOpen}
-      className="group bg-white dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl transition-all duration-200 flex items-center gap-4 shadow-sm hover:shadow-lg cursor-pointer"
-    >
-      {/* File Icon */}
-      <div className={`shrink-0 p-3 rounded-xl ${bg} group-hover:scale-110 transition-transform duration-200`}>
-        <FileIcon className={`w-5 h-5 ${color}`} />
-      </div>
+    <div className="group relative">
+      <div 
+        className="relative bg-white dark:bg-[#0f1117] border border-zinc-200 dark:border-[rgba(255,255,255,0.07)] p-4 rounded-[10px] transition-all duration-300 flex items-center gap-6 cursor-pointer hover:bg-zinc-50 dark:hover:bg-white/[0.02] shadow-sm"
+        onClick={handleOpen}
+      >
+        {/* File Icon */}
+        <div className={`shrink-0 p-3 rounded-lg ${bg} border border-transparent group-hover:scale-105 transition-transform duration-300`}>
+          <FileIcon className={`w-6 h-6 ${color}`} />
+        </div>
 
-      {/* File Info */}
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[260px] group-hover:text-primary transition-colors">
-          {filename}
-        </p>
-        <div className="flex items-center gap-3 mt-1">
-          <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium">
-            <Clock className="w-3 h-3" />
-            {formatDate(document.created_at)}
-          </span>
-          <span className="text-xs text-slate-300 dark:text-slate-700">·</span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{formatSize(document.size)}</span>
+        {/* File Info */}
+        <div className="min-w-0 flex-1">
+          <h4 className="text-sm font-bold text-zinc-900 dark:text-[#fff] truncate transition-colors">
+            {filename}
+          </h4>
+          <div className="flex items-center space-x-3 mt-1 underline-offset-4">
+            <span className="text-[10px] font-medium text-zinc-500 dark:text-white/45 flex items-center uppercase tracking-widest">
+              {formatDate(document.created_at)}
+            </span>
+            <span className="text-[10px] font-bold text-indigo-600 dark:text-[#4fa3f7] uppercase tracking-widest">{formatSize(document.size)}</span>
+          </div>
+        </div>
+
+        {/* Status & Actions */}
+        <div className="flex items-center space-x-4">
+          <div className="shrink-0">
+            {getStatusBadge(document.status)}
+          </div>
+
+          <div className="flex items-center">
+             <button
+              onClick={(e) => { e.stopPropagation(); deleteDocument(document.id); }}
+              className="p-2 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all active:scale-95"
+              title="Remove Item"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
       </div>
-
-      {/* Status Badge */}
-      <div className="shrink-0">
-        {getStatusBadge(document.status)}
-      </div>
-
-      {/* Delete */}
-      <button
-        onClick={(e) => { e.stopPropagation(); deleteDocument(document.id); }}
-        className="shrink-0 p-2 rounded-xl text-slate-400 dark:text-slate-600 hover:text-red-500 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
-        title="Delete document"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
-    </motion.div>
+    </div>
   )
 }
 
 export default DocumentItem
+
