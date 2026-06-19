@@ -62,18 +62,19 @@ const RegisterPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-white/45 uppercase tracking-[0.2em] ml-1">Full Name</label>
+              <label className="text-[10px] font-bold text-white/45 uppercase tracking-[0.2em] ml-1">Username</label>
               <div className="relative group">
                 <User className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-[#7c5cfc] transition-colors" />
                 <input
                   type="text"
                   required
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Your name"
+                  onChange={(e) => setUsername(e.target.value.replace(/\s+/g, ''))}
+                  placeholder="username"
                   className="w-full bg-[#0a0a0f] border border-[rgba(255,255,255,0.07)] rounded-[10px] py-4 pl-14 pr-6 text-[#fff] text-xs focus:outline-none focus:border-[#7c5cfc]/50 transition-all font-bold placeholder-white/20 tracking-wide"
                 />
               </div>
+              <p className="text-[9px] text-white/30 ml-1">Letters, digits, and underscores only. Spaces will be automatically removed.</p>
             </div>
 
             <div className="space-y-2">

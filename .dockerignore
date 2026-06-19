@@ -2,8 +2,16 @@ __pycache__/
 *.pyc
 .git
 .env
+.venv/
+venv/
+node_modules/
+frontend/node_modules/
 uploads/
 tests/
-.venv/
+.cache/
+.pytest_cache/
+.vscode/
+.idea/
+*.log
 
 

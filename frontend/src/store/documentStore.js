@@ -14,7 +14,17 @@ const useDocumentStore = create((set, get) => ({
       const response = await documentApi.fetchDocuments()
       set({ documents: response.data.items || [], loading: false })
     } catch (error) {
-      const message = error.response?.data?.detail || 'Failed to fetch documents'
+      let message = 'Failed to fetch documents'
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail
+        if (Array.isArray(detail)) {
+          message = detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ')
+        } else if (typeof detail === 'string') {
+          message = detail
+        } else if (typeof detail === 'object') {
+          message = detail.detail || JSON.stringify(detail)
+        }
+      }
       set({ error: message, loading: false })
       toast.error(message)
     } finally {
@@ -32,7 +42,17 @@ const useDocumentStore = create((set, get) => ({
       set({ error: null })
       return true
     } catch (error) {
-      const message = error.response?.data?.detail || 'Document upload failed. Please try again.'
+      let message = 'Document upload failed. Please try again.'
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail
+        if (Array.isArray(detail)) {
+          message = detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ')
+        } else if (typeof detail === 'string') {
+          message = detail
+        } else if (typeof detail === 'object') {
+          message = detail.detail || JSON.stringify(detail)
+        }
+      }
       set({ error: message })
       toast.error(message)
       return false

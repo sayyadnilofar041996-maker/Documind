@@ -60,8 +60,6 @@ async def run_rag_chain(
         metadata=metadata or "No Repository Intelligence available for this session.",
         context=context,
         history=history_text,
-        filename="{filename}",  # kept as placeholder for inline citations
-        page="{page}",          # kept as placeholder for inline citations
     )
 
     # Step 4: Build messages for Groq

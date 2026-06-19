@@ -31,7 +31,7 @@ class Settings(BaseModel):
 
     # Groq
     groq_api_key: str = ""
-    groq_model: str = "llama3-8b-8192"
+    groq_model: str = "llama-3.3-70b-versatile"
     groq_max_tokens: int = 1024
     groq_temperature: float = 0.1
 

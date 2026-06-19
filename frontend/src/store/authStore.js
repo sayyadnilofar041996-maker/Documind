@@ -28,7 +28,17 @@ const useAuthStore = create((set, get) => ({
       })
       return true
     } catch (error) {
-      const message = error.response?.data?.detail || 'Login failed'
+      let message = 'Login failed'
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail
+        if (Array.isArray(detail)) {
+          message = detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ')
+        } else if (typeof detail === 'string') {
+          message = detail
+        } else if (typeof detail === 'object') {
+          message = detail.detail || JSON.stringify(detail)
+        }
+      }
       set({ error: message, loading: false })
       return false
     }
@@ -41,7 +51,17 @@ const useAuthStore = create((set, get) => ({
       set({ loading: false })
       return true
     } catch (error) {
-      const message = error.response?.data?.detail || 'Registration failed'
+      let message = 'Registration failed'
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail
+        if (Array.isArray(detail)) {
+          message = detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ')
+        } else if (typeof detail === 'string') {
+          message = detail
+        } else if (typeof detail === 'object') {
+          message = detail.detail || JSON.stringify(detail)
+        }
+      }
       set({ error: message, loading: false })
       return false
     }

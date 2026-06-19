@@ -144,7 +144,7 @@ const useChatStore = create(
           const response = await chatApi.askQuestion(
             content, 
             selectedDocument?.id, 
-            'llama-3.1-8b-instant',
+            'llama-3.3-70b-versatile',
             docIds
           )
           const aiContent = response.data.answer || response.data.response
@@ -158,7 +158,17 @@ const useChatStore = create(
           })
           set({ loading: false })
         } catch (error) {
-          const message = error.response?.data?.detail || 'Failed to get response'
+          let message = 'Failed to get response'
+          if (error.response?.data?.detail) {
+            const detail = error.response.data.detail
+            if (Array.isArray(detail)) {
+              message = detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ')
+            } else if (typeof detail === 'string') {
+              message = detail
+            } else if (typeof detail === 'object') {
+              message = detail.detail || JSON.stringify(detail)
+            }
+          }
           set({ error: message, loading: false })
           toast.error(message)
         }
