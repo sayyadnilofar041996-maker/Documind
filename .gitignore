@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment files
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+*.log
+
+# Uploads (user files — never commit)
+app/uploads/
+uploads/
+
+# HuggingFace model cache (large — never commit)
+.cache/
+*.cache/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Alembic
+alembic/versions/__pycache__/t m p / 
+
+# Debug files
+debug_*.py
+
+# Test outputs
+test_*.txt
+tests_*.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# Env
+.env
+ 
+ 

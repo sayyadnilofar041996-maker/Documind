@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sora:wght@400;600;700;800&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: #818cf8;
+  
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", var(--font-sans);
+
+  --shadow-premium: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
+  
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+}
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #09090b;
+    --card: #ffffff;
+    --card-foreground: #09090b;
+    --primary: #4fa3f7;
+    --border: #e4e4e7;
+    color-scheme: light;
+  }
+
+  .dark {
+    --background: #0a0a0f;
+    --foreground: #fafafa;
+    --card: #0f1117;
+    --card-foreground: #fafafa;
+    --primary: #7c5cfc;
+    --border: rgba(255, 255, 255, 0.07);
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-white dark:bg-[#0a0a0f] text-[#09090b] dark:text-[#fff] font-sans antialiased transition-colors duration-300;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight font-bold text-[#09090b] dark:text-[#fff];
+  }
+
+  /* Refined Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-zinc-200 dark:bg-white/10 rounded-full border-2 border-transparent bg-clip-content;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-zinc-300 dark:bg-white/20;
+  }
+}
+
+/* ── Professional Utility Matrix ────────────────────────────── */
+.glass {
+  @apply bg-white/70 dark:bg-[#0f1117] border border-zinc-200 dark:border-[rgba(255,255,255,0.07)] backdrop-blur-xl;
+}
+
+.glass-card {
+  @apply bg-white dark:bg-[#0f1117] border border-zinc-200 dark:border-[rgba(255,255,255,0.07)] shadow-sm transition-all duration-300 rounded-[10px];
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-[#7c5cfc] via-[#4fa3f7] to-[#7c5cfc];
+}
+
+/* Industrial Buttons */
+.btn-primary {
+  @apply relative inline-flex items-center justify-center px-4 py-2 rounded-[10px] bg-zinc-900 dark:bg-indigo-600 hover:bg-zinc-800 dark:hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-widest transition-all active:scale-95 shadow-sm border border-transparent dark:border-indigo-400/20 disabled:opacity-50 overflow-hidden;
+}
+
+.btn-secondary {
+  @apply relative inline-flex items-center justify-center px-4 py-2 rounded-[10px] bg-white dark:bg-[#0f1117] border border-zinc-200 dark:border-[rgba(255,255,255,0.07)] text-zinc-900 dark:text-[#fff] font-bold text-xs uppercase tracking-widest transition-all hover:bg-zinc-50 dark:hover:bg-white/[0.02] active:scale-95 disabled:opacity-50;
+}

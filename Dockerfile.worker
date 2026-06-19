@@ -1,0 +1,57 @@
+# ============================================================
+# DocuMind — Celery Worker + Beat + Flower
+# Base: python:3.12-slim
+# Runs: worker, beat, flower services from docker-compose.yml
+# ============================================================
+
+FROM python:3.12-slim
+
+# Set working directory inside container
+WORKDIR /app
+
+# Prevent Python from writing .pyc files
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Prevent Python from buffering stdout/stderr
+# (so celery task logs appear immediately)
+ENV PYTHONUNBUFFERED=1
+
+# Force HuggingFace to use our cache directory
+# (avoids re-downloading model on every container start)
+ENV HF_HOME=/app/.cache/huggingface
+ENV TRANSFORMERS_CACHE=/app/.cache/huggingface
+
+# Install system dependencies
+# gcc, g++   → needed to compile Python packages (asyncpg etc.)
+# libpq-dev  → needed for PostgreSQL driver inside worker tasks
+# NOTE: no curl needed (worker has no health check endpoint)
+# NOTE: no libmagic1 needed (worker doesn't validate uploads)
+RUN apt-get update --fix-missing && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    antiword \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first (layer cache optimization)
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy entire project code into container
+COPY . .
+
+# Create HuggingFace model cache directory
+# Worker runs embed_task which loads all-MiniLM-L6-v2
+# This directory must exist before the model downloads
+RUN mkdir -p /app/.cache/huggingface
+
+# ============================================================
+# NOTE: No EXPOSE — worker has no HTTP server
+# NOTE: No CMD — command set in docker-compose.yml:
+#   worker  → celery -A worker.celery_app worker --concurrency=2
+#   beat    → celery -A worker.celery_app beat
+#   flower  → celery -A worker.celery_app flower --port=5555
+# ============================================================

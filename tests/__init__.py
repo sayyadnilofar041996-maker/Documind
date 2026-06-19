@@ -1,0 +1,1 @@
+# DocuMind - tests package

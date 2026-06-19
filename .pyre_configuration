@@ -1,0 +1,14 @@
+{
+  "source_directories": [
+    "C:\\Users\\DIGI BYTES\\Desktop\\documind"
+  ],
+  "search_path": [
+    "C:\\Users\\DIGI BYTES\\Desktop\\documind\\.venv\\Lib\\site-packages",
+    "C:\\Users\\DIGI BYTES\\Desktop\\documind"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    ".pytest_cache",
+    ".venv"
+  ]
+}
