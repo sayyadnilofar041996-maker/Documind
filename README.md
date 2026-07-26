@@ -25,10 +25,8 @@ DocuMind lets you upload documents and query them using natural language — it 
 - [x] Tests + polish
 
 ### Quick Start
-\`\`\`bash
-cp .env.example .env
 docker compose up
-\`\`\`
+
 
 Once running, [add the actual next step — e.g. "visit http://localhost:8000/docs for the API, or http://localhost:3000 for the frontend"].
 
